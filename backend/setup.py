@@ -76,7 +76,6 @@ def main():
             with open(".env", "a", encoding="utf-8") as f:
                 f.write(f"KIRANA_DB_ID={db_id}\n")
             log.debug(f"Wrote KIRANA_DB_ID to .env: {db_id}")
-            d1._client.close()
         except Exception as e:
             log.error(f"Error creating D1 database for kirana: {e}")
             log.info("Set KIRANA_DB_ID in .env if the database already exists")
