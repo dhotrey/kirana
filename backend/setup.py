@@ -33,7 +33,7 @@ def main():
             cf_client = Cloudflare(
                 api_token=cloudflare_api_token_secret.get_secret_value()
             )
-            log.info(f"Cloudflare API token is valid {cloudflare_api_token_secret}")
+            log.info("Cloudflare API token is valid")
         except Exception as e:
             log.error(f"Error checking if Cloudflare API token is valid: {e}")
             log.info(
@@ -50,7 +50,7 @@ def main():
             name=cloudflare_account_id_secret.get_secret_value()
         )
         if accounts:
-            log.info(f"Cloudflare account ID is valid: {cloudflare_account_id_secret}")
+            log.info("Cloudflare account ID is valid")
         else:
             log.error("Cloudflare account is not found")
             log.info(
@@ -58,27 +58,31 @@ def main():
             )
             exit(1)
 
-    d1 = cf_client.d1.database
-    try:
-        kirana = d1.create(
-            account_id=cloudflare_account_id_secret.get_secret_value(), name="kirana"
-        )
-        log.info(f"D1 database created for kirana : {kirana.name}")
-        # write db_id to .env
-        with open(".env", "a") as f:
-            f.write(f"KIRANA_DB_ID={kirana.uuid}\n")
-            log.debug(f"Wrote KIRANA_DB_ID to .env: {kirana.uuid}")
-        d1._client.close()
-    except Exception as e:
-        log.error(
-            f"Error creating D1 database for kirana it probably already exists: {e}"
-        )
-
     db_id = os.environ.get("KIRANA_DB_ID")
     if db_id is None:
-        log.error("KIRANA_DB_ID is not set")
-        log.info("Please run the script again after creating the D1 database")
-        exit(1)
+        d1 = cf_client.d1.database
+        try:
+            kirana = d1.create(
+                account_id=cloudflare_account_id_secret.get_secret_value(),
+                name="kirana",
+            )
+            db_id = kirana.uuid
+            if db_id is None:
+                log.error("D1 database creation did not return a database ID")
+                exit(1)
+            os.environ["KIRANA_DB_ID"] = db_id
+            log.info(f"D1 database created for kirana: {kirana.name}")
+            # Persist the generated ID for future setup runs.
+            with open(".env", "a", encoding="utf-8") as f:
+                f.write(f"KIRANA_DB_ID={db_id}\n")
+            log.debug(f"Wrote KIRANA_DB_ID to .env: {db_id}")
+            d1._client.close()
+        except Exception as e:
+            log.error(f"Error creating D1 database for kirana: {e}")
+            log.info("Set KIRANA_DB_ID in .env if the database already exists")
+            exit(1)
+    else:
+        log.info("Using existing KIRANA_DB_ID from environment")
 
     db_setup_statements = [
         splitwise_create_table_sql,
