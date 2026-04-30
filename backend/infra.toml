@@ -1,0 +1,12 @@
+[kirana]
+log_level = "INFO" # INFO, DEBUG, WARNING, ERROR, CRITICAL
+
+
+[cloudflare]
+d1_database_name = "kirana"
+ai_gateway_name = "kirana-ai-gateway"
+vectorize_index_name = "kirana-reciept-summaries"
+vectorize_embedding_model = "qwen3-vl-embedding-2b"
+vectorize_index_dimension = 1536
+vectorize_index_metadata_fields = ["receipt_id", "store_name", "date"] # receipt_id is the join key referenced by Cloudflare Vectorize metadata and the Tigris filename in subsequent steps.
+vectorize_index_metadata_field_types = ["number", "string", "number"]
