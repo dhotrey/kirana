@@ -3,7 +3,7 @@ import os
 from pydantic import SecretStr
 from loguru import logger as log
 from cloudflare import Cloudflare
-from db.db_setup import (
+from utils.db.db_setup import (
     splitwise_create_table_sql,
     receipts_create_table_sql,
     reciept_items_create_table_sql,
