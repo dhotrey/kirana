@@ -10,3 +10,9 @@ vectorize_embedding_model = "qwen3-vl-embedding-2b"
 vectorize_index_dimension = 1536
 vectorize_index_metadata_fields = ["receipt_id", "store_name", "date"] # receipt_id is the join key referenced by Cloudflare Vectorize metadata and the Tigris filename in subsequent steps.
 vectorize_index_metadata_field_types = ["number", "string", "number"]
+
+[tigris]
+bucket_name = "kirana-kb-raw-data"
+aws_endpoint_url_s3 = "https://t3.storage.dev"
+aws_endpoint_url_iam = "https://iam.storage.dev"
+aws_region = "auto"

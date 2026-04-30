@@ -11,6 +11,8 @@ from db.db_setup import (
 )
 import tomllib
 from utils.types import InfraConfig
+import boto3
+from botocore.client import Config
 
 load_dotenv()
 
@@ -27,9 +29,22 @@ def fetch_infra_config():
             {
                 "cf_config": infra_config["cloudflare"],
                 "log_level": infra_config["kirana"]["log_level"],
+                "tigris_config": infra_config["tigris"],
             }
         )
 
+
+def setup_tigris(infra_config: InfraConfig):
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        endpoint_url=infra_config.tigris_config.aws_endpoint_url_s3,
+        config=Config(s3={"addressing_style": "virtual"}),
+    )
+
+    s3_client.create_bucket(Bucket=infra_config.tigris_config.bucket_name)
+    log.info(f"Tigris bucket created: {infra_config.tigris_config.bucket_name}")
 
 
 def setup_d1(
@@ -199,6 +214,7 @@ def main():
     )
     setup_ai_gateway(cf_client, cloudflare_account_id_secret, infra_config)
 
+    setup_tigris(infra_config)
 
 if __name__ == "__main__":
     main()

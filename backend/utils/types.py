@@ -12,6 +12,14 @@ class CloudflareConfig(pydantic.BaseModel):
     vectorize_index_metadata_field_types: list[Literal["string", "number", "boolean"]]
 
 
+class TigrisConfig(pydantic.BaseModel):
+    bucket_name: str
+    aws_endpoint_url_s3: str
+    aws_endpoint_url_iam: str
+    aws_region: str
+
+
 class InfraConfig(pydantic.BaseModel):
     cf_config: CloudflareConfig
     log_level: str  # INFO, DEBUG, WARNING, ERROR, CRITICAL
+    tigris_config: TigrisConfig
