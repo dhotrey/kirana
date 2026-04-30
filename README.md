@@ -18,7 +18,7 @@ Against a plain-LLM baseline (no tools, receipts injected as context), the ablat
 
 - Implement and evaluate a single, strong ablation: a 2×2 factorial over retrieval strategy × model tier, plus a plain-LLM baseline — testing whether the harness closes the performance gap between models.
 
-- Capture full query traces via Pydantic Logfire (token burn, tool calls, routing decisions, latency as a sum of parts — e.g. embedding accounts for 2s, retrieval 5s, synthesis 3s) with zero persistent local telemetry overhead.
+- Capture full query traces via Pydantic Logfire (token burn, tool calls, routing decisions, latency as a sum of parts — e.g. embedding accounts for 2s, retrieval 5s, synthesis 3s) with zero persistent local telemetry overhead. An example of token burn metrics is one I saw in codex - Token usage: total=66,085 input=60,466 (+ 3,66,592 cached) output=5,619 (reasoning 1,313) 
 
 - Expose inline query stats in the UI (latency, tokens, tool hops, model) with full traces available in Logfire.
 
