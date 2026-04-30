@@ -165,6 +165,23 @@ def setup_ai_gateway(
         log.info(f"AI Gateway created with id: {ai_gateway.id}")
 
 
+def validate_cloudflare_account_id(cf_client, cloudflare_account_id_secret: SecretStr):
+    cloudflare_account_id = cloudflare_account_id_secret.get_secret_value()
+    if cloudflare_account_id == "":
+        raise SetupError("CLOUDFLARE_ACCOUNT_ID is not set")
+
+    log.info("CLOUDFLARE_ACCOUNT_ID is set")
+    try:
+        cf_client.accounts.get(account_id=cloudflare_account_id)
+    except Exception as e:
+        raise SetupError(
+            "Cloudflare account is not found. A valid account ID can be "
+            "obtained from https://dash.cloudflare.com/profile/accounts."
+        ) from e
+
+    log.info("Cloudflare account ID is valid")
+
+
 def main():
 
     infra_config = fetch_infra_config()
@@ -191,20 +208,7 @@ def main():
                 "https://dash.cloudflare.com/profile/api-tokens."
             ) from e
 
-    if cloudflare_account_id_secret.get_secret_value() == "":
-        raise SetupError("CLOUDFLARE_ACCOUNT_ID is not set")
-    else:
-        log.info("CLOUDFLARE_ACCOUNT_ID is set")
-        accounts = cf_client.accounts.list(
-            name=cloudflare_account_id_secret.get_secret_value()
-        )
-        if accounts:
-            log.info("Cloudflare account ID is valid")
-        else:
-            raise SetupError(
-                "Cloudflare account is not found. A valid account ID can be "
-                "obtained from https://dash.cloudflare.com/profile/accounts."
-            )
+    validate_cloudflare_account_id(cf_client, cloudflare_account_id_secret)
 
     setup_d1(cf_client, cloudflare_account_id_secret, infra_config)
 
