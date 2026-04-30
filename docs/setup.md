@@ -18,17 +18,21 @@ CLOUDFLARE_ACCOUNT_ID=<cloudflare-account-id>
 AWS_ACCESS_KEY_ID=<tigris-access-key-id>
 AWS_SECRET_ACCESS_KEY=<tigris-secret-access-key>
 
+# Required after enabling Authenticated Gateway in the Cloudflare dashboard.
+CLOUDFLARE_AI_GATEWAY_API_TOKEN=<cloudflare-ai-gateway-auth-token>
+
 # Optional if the D1 database already exists.
 # setup.py writes this after creating the database.
 KIRANA_DB_ID=<d1-database-id>
 ```
 
-`CLOUDFLARE_AI_GATEWAY_API_TOKEN` may be needed later for model calls through AI Gateway, but `setup.py` does not currently read it.
+`setup.py` creates the AI Gateway resource, but it does not enable gateway authentication or create provider keys. Those are dashboard steps described below.
 
 ## Where Credentials Come From
 
 - `CLOUDFLARE_API_TOKEN`: Cloudflare dashboard -> My Profile -> API Tokens. The token needs access to create/manage D1, Vectorize, and AI Gateway resources for the account.
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare dashboard -> account page/sidebar, or the account URL in the dashboard.
+- `CLOUDFLARE_AI_GATEWAY_API_TOKEN`: Cloudflare AI Gateway authentication token created from the gateway settings page after `setup.py` creates the gateway.
 - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Tigris dashboard access keys. The setup uses Tigris' S3-compatible API endpoint from `backend/infra.toml`.
 - `KIRANA_DB_ID`: Cloudflare D1 database UUID. Leave unset for a fresh setup; the script creates the D1 database and appends the generated ID to `.env`.
 
@@ -74,6 +78,45 @@ Creates the `kirana-ai-gateway` AI Gateway with logging enabled, cache invalidat
 
 The gateway is intended to route hosted model calls used by ingestion and later query flows.
 
+After the script creates the gateway, finish the AI Gateway setup in the Cloudflare dashboard:
+
+1. Open the Cloudflare dashboard and select the same account as `CLOUDFLARE_ACCOUNT_ID`.
+2. Go to AI -> AI Gateway.
+3. Open the `kirana-ai-gateway` gateway.
+4. Go to the gateway settings page.
+5. Select Create authentication token. Use a token with the required AI Gateway `Run` permission.
+6. Copy the token immediately; Cloudflare will not show it again.
+7. Add it to `backend/.env` as `CLOUDFLARE_AI_GATEWAY_API_TOKEN`.
+8. Toggle on Authenticated Gateway.
+
+When Authenticated Gateway is enabled, requests must include:
+
+```http
+cf-aig-authorization: Bearer <CLOUDFLARE_AI_GATEWAY_API_TOKEN>
+```
+
+This project uses bring-your-own-key (BYOK) provider keys through AI Gateway. Configure the upstream model provider keys in the same gateway:
+
+1. In Cloudflare, go to AI -> AI Gateway -> `kirana-ai-gateway`.
+2. Open Provider Keys.
+3. Select Add API Key.
+4. Add keys for these providers:
+   - Google AI Studio
+   - Groq
+   - Mistral AI
+   - OpenRouter
+5. Keep the key alias as `default` unless the code explicitly sends a `cf-aig-byok-alias` header.
+6. Save each provider key and confirm it appears as active in the Provider Keys list.
+
+Get the provider API keys from each provider console:
+
+- Google AI Studio: create a Gemini API key in Google AI Studio.
+- Groq: create an API key in the Groq console.
+- Mistral AI: create an API key in La Plateforme / Mistral console.
+- OpenRouter: create an API key in the OpenRouter account settings.
+
+Provider keys are stored in Cloudflare's AI Gateway/Secrets Store configuration. They should not be copied into this repository's `.env`; the app authenticates to the gateway with `CLOUDFLARE_AI_GATEWAY_API_TOKEN`, and the gateway attaches the correct upstream provider key at request time.
+
 ### Tigris Object Store
 
 Creates the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
@@ -83,4 +126,3 @@ Creates the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
 - region: `auto`
 
 The bucket stores raw receipt images. D1 stores the resulting object URL on the corresponding receipt row after ingestion.
-
