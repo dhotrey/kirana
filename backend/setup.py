@@ -17,6 +17,10 @@ from botocore.client import Config
 load_dotenv()
 
 
+class SetupError(Exception):
+    """Raised when infrastructure setup cannot continue."""
+
+
 def fetch_infra_config():
     """Read infra.toml and return a typed infrastructure config.
 
@@ -61,18 +65,20 @@ def setup_d1(
             )
             db_id = kirana.uuid
             if db_id is None:
-                log.error("D1 database creation did not return a database ID")
-                exit(1)
+                raise SetupError("D1 database creation did not return a database ID")
             os.environ["KIRANA_DB_ID"] = db_id
             log.info(f"D1 database created for kirana: {kirana.name}")
             # Persist the generated ID for future setup runs.
             with open(".env", "a", encoding="utf-8") as f:
                 f.write(f"KIRANA_DB_ID={db_id}\n")
             log.debug(f"Wrote KIRANA_DB_ID to .env: {db_id}")
+        except SetupError:
+            raise
         except Exception as e:
-            log.error(f"Error creating D1 database for kirana: {e}")
-            log.info("Set KIRANA_DB_ID in .env if the database already exists")
-            exit(1)
+            raise SetupError(
+                "Error creating D1 database for kirana. "
+                "Set KIRANA_DB_ID in .env if the database already exists."
+            ) from e
     else:
         log.info("Using existing KIRANA_DB_ID from environment")
 
@@ -107,8 +113,7 @@ def setup_vectorize(
         },
     )
     if kirana_vectorize_index is None:
-        log.error("Cloudflare Vectorize index creation failed")
-        exit(1)
+        raise SetupError("Cloudflare Vectorize index creation failed")
     else:
         log.info(
             f"Cloudflare Vectorize index created for kirana with config: {kirana_vectorize_index.config}"
@@ -129,10 +134,9 @@ def setup_vectorize_metadata_indices(
             property_name=idx_name,
         )
         if metadata_index is None:
-            log.error(
+            raise SetupError(
                 f"Metadata index creation failed for {idx_name} with type {idx_type}"
             )
-            exit(1)
         else:
             log.info(
                 f"Metadata index created for {idx_name} with type {idx_type} and mutation id {metadata_index.mutation_id}"
@@ -156,8 +160,7 @@ def setup_ai_gateway(
         log_management_strategy="DELETE_OLDEST",
     )
     if ai_gateway is None:
-        log.error("AI Gateway creation failed")
-        exit(1)
+        raise SetupError("AI Gateway creation failed")
     else:
         log.info(f"AI Gateway created with id: {ai_gateway.id}")
 
@@ -173,8 +176,7 @@ def main():
     )
 
     if cloudflare_api_token_secret.get_secret_value() == "":
-        log.error("CLOUDFLARE_API_TOKEN is not set")
-        exit(1)
+        raise SetupError("CLOUDFLARE_API_TOKEN is not set")
     else:
         log.info("CLOUDFLARE_API_TOKEN is set")
         try:
@@ -183,15 +185,14 @@ def main():
             )
             log.info("Cloudflare API token is valid")
         except Exception as e:
-            log.error(f"Error checking if Cloudflare API token is valid: {e}")
-            log.info(
-                "A valid API token can be obtained from https://dash.cloudflare.com/profile/api-tokens"
-            )
-            exit(1)
+            raise SetupError(
+                "Error checking if Cloudflare API token is valid. "
+                "A valid API token can be obtained from "
+                "https://dash.cloudflare.com/profile/api-tokens."
+            ) from e
 
     if cloudflare_account_id_secret.get_secret_value() == "":
-        log.error("CLOUDFLARE_ACCOUNT_ID is not set")
-        exit(1)
+        raise SetupError("CLOUDFLARE_ACCOUNT_ID is not set")
     else:
         log.info("CLOUDFLARE_ACCOUNT_ID is set")
         accounts = cf_client.accounts.list(
@@ -200,11 +201,10 @@ def main():
         if accounts:
             log.info("Cloudflare account ID is valid")
         else:
-            log.error("Cloudflare account is not found")
-            log.info(
-                "A valid account ID can be obtained from https://dash.cloudflare.com/profile/accounts"
+            raise SetupError(
+                "Cloudflare account is not found. A valid account ID can be "
+                "obtained from https://dash.cloudflare.com/profile/accounts."
             )
-            exit(1)
 
     setup_d1(cf_client, cloudflare_account_id_secret, infra_config)
 
@@ -216,5 +216,14 @@ def main():
 
     setup_tigris(infra_config)
 
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        log.error(f"Error setting up infrastructure: {e}")
+        log.info(
+            "Please check ../docs/setup.md for more information on how to set up "
+            "the infrastructure"
+        )
+        raise SystemExit(1) from e
