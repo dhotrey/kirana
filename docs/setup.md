@@ -126,3 +126,32 @@ Creates the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
 - region: `auto`
 
 The bucket stores raw receipt images. D1 stores the resulting object URL on the corresponding receipt row after ingestion.
+
+## Troubleshooting
+
+### `uv: command not found` or Python version mismatch
+
+The project targets **Python ≥ 3.13** per `backend/pyproject.toml`. Install [`uv`](https://docs.astral.sh/uv/) and use a compatible interpreter, or install dependencies with another tool and run `python setup.py` from `backend/` with those packages available.
+
+### Setup fails after a partial run
+
+`setup.py` creates Cloudflare and Tigris resources by name. If a previous run succeeded halfway (for example D1 exists but Vectorize creation failed), fix the underlying error and either:
+
+- Re-run after resolving the failure (some steps skip when IDs already exist, e.g. `KIRANA_DB_ID` for D1), or  
+- Manually delete/rename conflicting resources in the Cloudflare or Tigris dashboards and run again.
+
+Creating the Tigris bucket a second time will typically fail with “bucket already exists.”
+
+### Wrong or missing `CLOUDFLARE_ACCOUNT_ID`
+
+The script treats missing token/account as fatal. The account ID must match your Cloudflare account; copy it from the dashboard if provisioning fails with account-related errors.
+
+### AI Gateway returns 401 after setup
+
+If **Authenticated Gateway** is enabled, every request must send `cf-aig-authorization: Bearer <CLOUDFLARE_AI_GATEWAY_API_TOKEN>`. Confirm the token is in `backend/.env` and that provider keys are configured in the gateway for the models you call (ingestion and query code are not yet in-repo).
+
+### Where to look in code
+
+- **D1 DDL and indexes:** `backend/utils/db/db_setup.py`  
+- **Resource names and Vectorize dimensions:** `backend/infra.toml` and `backend/utils/types.py`  
+- **Provisioning order:** D1 → Vectorize (+ metadata indices) → AI Gateway → Tigris bucket — see `backend/setup.py`

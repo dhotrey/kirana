@@ -6,5 +6,6 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 
 ## Current Documents
 
-- [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `backend/setup.py`.
+- [Architecture](./architecture.md): components (D1, Vectorize, AI Gateway, Tigris), configuration surfaces, what is implemented in code versus specified in READMEs only, and operational constraints.
+- [Setup](./setup.md): infrastructure setup, required credentials, resources created by `backend/setup.py`, and troubleshooting.
 
