@@ -2,6 +2,10 @@ import pydantic
 from typing import Literal
 
 
+class KiranaConfig(pydantic.BaseModel):
+    log_level: str  # INFO, DEBUG, WARNING, ERROR, CRITICAL
+
+
 class CloudflareConfig(pydantic.BaseModel):
     d1_database_name: str
     ai_gateway_name: str
@@ -19,7 +23,13 @@ class TigrisConfig(pydantic.BaseModel):
     aws_region: str
 
 
-class InfraConfig(pydantic.BaseModel):
-    cf_config: CloudflareConfig
+class KnowledgeBaseConfig(pydantic.BaseModel):
+    splitwise_csv_path: str
+
+
+class Config(pydantic.BaseModel):
+    kirana: KiranaConfig
+    cloudflare: CloudflareConfig
     log_level: str  # INFO, DEBUG, WARNING, ERROR, CRITICAL
-    tigris_config: TigrisConfig
+    kb: KnowledgeBaseConfig
+    tigris: TigrisConfig

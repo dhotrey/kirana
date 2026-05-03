@@ -1,5 +1,9 @@
 [kirana]
-log_level = "INFO" # INFO, DEBUG, WARNING, ERROR, CRITICAL
+log_level = "DEBUG" # INFO, DEBUG, WARNING, ERROR, CRITICAL
+
+[knowledge_base]
+splitwise_csv_path = "../knowledge-base/splitwise/splitwise-export-26-04-2026.csv"
+
 
 
 [cloudflare]
