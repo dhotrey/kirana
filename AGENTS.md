@@ -41,3 +41,4 @@
 - Run the narrowest relevant check available. For the current backend skeleton, use `cd backend && uv run python main.py`.
 - If tests or linters are introduced later, document and run them with `uv run ...` from `backend/`.
 - Keep README claims, environment flags, and evaluation conditions aligned with code changes.
+
