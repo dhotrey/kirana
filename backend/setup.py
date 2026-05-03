@@ -189,13 +189,13 @@ def main():
 
     setup_d1(cf_client, cloudflare_account_id_secret, infra_config)
 
-    # setup_vectorize(cf_client, cloudflare_account_id_secret, infra_config)
-    # setup_vectorize_metadata_indices(
-    #     cf_client, cloudflare_account_id_secret, infra_config
-    # )
-    # setup_ai_gateway(cf_client, cloudflare_account_id_secret, infra_config)
+    setup_vectorize(cf_client, cloudflare_account_id_secret, infra_config)
+    setup_vectorize_metadata_indices(
+        cf_client, cloudflare_account_id_secret, infra_config
+    )
+    setup_ai_gateway(cf_client, cloudflare_account_id_secret, infra_config)
 
-    # setup_tigris(infra_config)
+    setup_tigris(infra_config)
 
 
 if __name__ == "__main__":
