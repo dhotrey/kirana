@@ -1,4 +1,6 @@
 import os
+import hashlib
+from collections import defaultdict
 from csv import reader
 from utils.config import load_config
 from utils.types import Config
@@ -22,6 +24,7 @@ SPLITWISE_MONEY_COL_IDXS = (
     SPLITWISE_ROOMMATE2_COL_IDX,
 )
 SPLITWISE_INSERT_COLUMNS = (
+    "source_row_hash",
     "date",
     "description",
     "category",
@@ -31,6 +34,7 @@ SPLITWISE_INSERT_COLUMNS = (
     "roommate1_cents",
     "roommate2_cents",
 )
+SPLITWISE_SOURCE_COLUMNS = len(SPLITWISE_INSERT_COLUMNS) - 1
 D1_MAX_SQL_VARIABLES = 100
 SPLITWISE_INSERT_BATCH_SIZE = D1_MAX_SQL_VARIABLES // len(SPLITWISE_INSERT_COLUMNS)
 
@@ -46,18 +50,42 @@ def money_to_cents(value: str) -> int:
     return int((amount * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+def splitwise_source_row_hash(row: tuple[str, ...], occurrence: int) -> str:
+    row_key = "\x1f".join((*row, str(occurrence)))
+    return hashlib.sha256(row_key.encode("utf-8")).hexdigest()
+
+
 def clean_splitwise_data(data: list[list[str]]) -> list[list[str | int]]:
     cleaned_data = []
+    occurrences: defaultdict[tuple[str, ...], int] = defaultdict(int)
     for row in data:
         if not row or not any(cell.strip() for cell in row):
             continue
+        if len(row) <= SPLITWISE_COST_COL_IDX:
+            raise ValueError(f"Splitwise row has no cost column: {row}")
         if not row[SPLITWISE_COST_COL_IDX].strip():
             log.debug(f"Skipping Splitwise row without a cost: {row}")
             continue
+        if len(row) < SPLITWISE_SOURCE_COLUMNS:
+            raise ValueError(
+                f"Splitwise row has {len(row)} columns; "
+                f"expected {SPLITWISE_SOURCE_COLUMNS}: {row}"
+            )
+        extra_values = [cell for cell in row[SPLITWISE_SOURCE_COLUMNS:] if cell.strip()]
+        if extra_values:
+            raise ValueError(
+                f"Splitwise row has unexpected extra columns after "
+                f"{SPLITWISE_SOURCE_COLUMNS} expected columns: {row}"
+            )
 
-        cleaned_row: list[str | int] = [cell.strip() for cell in row]
+        source_row = tuple(cell.strip() for cell in row[:SPLITWISE_SOURCE_COLUMNS])
+        occurrences[source_row] += 1
+        cleaned_row: list[str | int] = [
+            splitwise_source_row_hash(source_row, occurrences[source_row]),
+            *source_row,
+        ]
         for col_idx in SPLITWISE_MONEY_COL_IDXS:
-            cleaned_row[col_idx] = money_to_cents(row[col_idx])
+            cleaned_row[col_idx + 1] = money_to_cents(source_row[col_idx])
 
         cleaned_data.append(cleaned_row)
 
@@ -71,12 +99,17 @@ def prepare_insert(data: list[list[str | int]]) -> tuple[str, list[str]]:
     row_placeholder = "(" + ", ".join(["?"] * len(SPLITWISE_INSERT_COLUMNS)) + ")"
     placeholders = ", ".join([row_placeholder] * len(data))
     sql = f"""
-INSERT INTO splits ({", ".join(SPLITWISE_INSERT_COLUMNS)})
+INSERT OR IGNORE INTO splits ({", ".join(SPLITWISE_INSERT_COLUMNS)})
 VALUES {placeholders};
 """.strip()
 
     params: list[str] = []
     for row in data:
+        if len(row) != len(SPLITWISE_INSERT_COLUMNS):
+            raise ValueError(
+                f"Splitwise row has {len(row)} values; "
+                f"expected {len(SPLITWISE_INSERT_COLUMNS)}"
+            )
         params.extend(str(value) for value in row)
 
     return sql, params

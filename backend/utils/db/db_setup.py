@@ -1,6 +1,7 @@
 splitwise_create_table_sql = """
 CREATE TABLE IF NOT EXISTS splits (
     id INTEGER PRIMARY KEY,
+    source_row_hash TEXT NOT NULL UNIQUE,
     date TEXT NOT NULL,
     description TEXT NOT NULL,
     category TEXT,
