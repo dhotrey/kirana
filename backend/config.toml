@@ -13,10 +13,27 @@ vectorize_index_name = "kirana-reciept-summaries"
 vectorize_embedding_model = "qwen3-vl-embedding-2b"
 vectorize_index_dimension = 1536
 vectorize_index_metadata_fields = ["receipt_id", "store_name", "date"] # receipt_id is the join key referenced by Cloudflare Vectorize metadata and the Tigris filename in subsequent steps.
-vectorize_index_metadata_field_types = ["number", "string", "number"]
+vectorize_index_metadata_field_types = ["number", "string", "string"]
 
 [tigris]
 bucket_name = "kirana-kb-raw-data"
 aws_endpoint_url_s3 = "https://t3.storage.dev"
 aws_endpoint_url_iam = "https://iam.storage.dev"
 aws_region = "auto"
+
+[ingestion]
+receipts_image_dir = "../knowledge-base/receipts/images"
+prompts_dir = "prompts"
+logs_dir = "logs"
+gemini_model = "google-ai-studio/gemini-3-flash"
+mistral_model = "mistral/mistral-large-latest"
+gemini_rpm = 5
+gemini_min_interval_seconds = 12.0
+max_ocr_retries = 3
+retry_backoff_strategy = "exponential"
+retry_backoff_base_seconds = 1.0
+retry_backoff_max_seconds = 30.0
+sum_tolerance_pct = 5.0
+embedding_model = "Qwen/Qwen3-Embedding-2B"
+embedding_dim = 1536
+dry_run = false

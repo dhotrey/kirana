@@ -1,0 +1,26 @@
+{
+  "store_name": "Woolworths",
+  "date": "2026-04-28",
+  "time": "14:32:00",
+  "address": "123 Example St",
+  "item_count": 2,
+  "subtotal": "10.00",
+  "gst": "1.00",
+  "discounts": "0.50",
+  "items": [
+    {
+      "item_name": "Bananas",
+      "quantity": 1.0,
+      "unit_price": "4.00",
+      "total_price": "4.00",
+      "inferred_category": "fresh_produce"
+    },
+    {
+      "item_name": "Milk",
+      "quantity": 1.0,
+      "unit_price": "6.00",
+      "total_price": "6.00",
+      "inferred_category": "dairy"
+    }
+  ]
+}
