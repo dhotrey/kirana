@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 
 from ingest_kb import (
@@ -36,10 +38,28 @@ def test_prepare_insert_builds_batch_insert_statement():
     sql, params = prepare_insert(cleaned_rows)
 
     assert sql == (
-        "INSERT INTO splits "
-        "(date, description, category, cost_cents, currency, me_cents, "
-        "roommate1_cents, roommate2_cents)\n"
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?);"
+        "WITH deduped (date, description, category, cost_cents, currency, "
+        "me_cents, roommate1_cents, roommate2_cents) AS (\n"
+        "    VALUES (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?)\n"
+        ")\n"
+        "INSERT INTO splits (date, description, category, cost_cents, "
+        "currency, me_cents, roommate1_cents, roommate2_cents)\n"
+        "SELECT deduped.date, deduped.description, deduped.category, "
+        "deduped.cost_cents, deduped.currency, deduped.me_cents, "
+        "deduped.roommate1_cents, deduped.roommate2_cents\n"
+        "FROM deduped\n"
+        "WHERE NOT EXISTS (\n"
+        "    SELECT 1\n"
+        "    FROM splits\n"
+        "    WHERE splits.date = deduped.date AND "
+        "splits.description = deduped.description AND "
+        "splits.category = deduped.category AND "
+        "splits.cost_cents = deduped.cost_cents AND "
+        "splits.currency = deduped.currency AND "
+        "splits.me_cents = deduped.me_cents AND "
+        "splits.roommate1_cents = deduped.roommate1_cents AND "
+        "splits.roommate2_cents = deduped.roommate2_cents\n"
+        ");"
     )
     assert params == [
         "2026-02-08",
@@ -59,6 +79,50 @@ def test_prepare_insert_builds_batch_insert_statement():
         "0",
         "500",
     ]
+
+
+def test_prepare_insert_is_idempotent_when_replayed_against_existing_rows():
+    cleaned_rows = [
+        ["2026-02-08", "Changi", "General", 2835, "AUD", -945, 1890, -945],
+        ["2026-02-08", "Starbucks", "Dining out", 500, "AUD", -500, 0, 500],
+    ]
+    sql, params = prepare_insert(cleaned_rows)
+
+    db = sqlite3.connect(":memory:")
+    db.execute(
+        """
+        CREATE TABLE splits (
+            id INTEGER PRIMARY KEY,
+            date TEXT NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT,
+            cost_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            me_cents INTEGER NOT NULL,
+            roommate1_cents INTEGER NOT NULL,
+            roommate2_cents INTEGER NOT NULL
+        );
+        """
+    )
+
+    db.execute(sql, params)
+    db.execute(sql, params)
+
+    assert db.execute("SELECT COUNT(*) FROM splits").fetchone() == (2,)
+
+
+def test_clean_splitwise_data_rejects_rows_with_unexpected_column_count():
+    with pytest.raises(ValueError, match="expected 8"):
+        clean_splitwise_data(
+            [["2026-02-08", "Changi", "General", "28.35", "AUD", "-9.45", "18.90"]]
+        )
+
+
+def test_prepare_insert_rejects_rows_with_unexpected_column_count():
+    with pytest.raises(ValueError, match="expected 8"):
+        prepare_insert(
+            [["2026-02-08", "Changi", "General", 2835, "AUD", -945, 1890]]
+        )
 
 
 def test_prepare_insert_rejects_empty_data():

@@ -33,6 +33,7 @@ SPLITWISE_INSERT_COLUMNS = (
 )
 D1_MAX_SQL_VARIABLES = 100
 SPLITWISE_INSERT_BATCH_SIZE = D1_MAX_SQL_VARIABLES // len(SPLITWISE_INSERT_COLUMNS)
+SPLITWISE_EXPECTED_COL_COUNT = len(SPLITWISE_INSERT_COLUMNS)
 
 
 def read_splitwise_csv(file_path: str) -> list[list[str]]:
@@ -51,6 +52,11 @@ def clean_splitwise_data(data: list[list[str]]) -> list[list[str | int]]:
     for row in data:
         if not row or not any(cell.strip() for cell in row):
             continue
+        if len(row) != SPLITWISE_EXPECTED_COL_COUNT:
+            raise ValueError(
+                "Splitwise row has "
+                f"{len(row)} columns; expected {SPLITWISE_EXPECTED_COL_COUNT}: {row}"
+            )
         if not row[SPLITWISE_COST_COL_IDX].strip():
             log.debug(f"Skipping Splitwise row without a cost: {row}")
             continue
@@ -68,11 +74,31 @@ def prepare_insert(data: list[list[str | int]]) -> tuple[str, list[str]]:
     if not data:
         raise ValueError("Cannot prepare a Splitwise insert with no rows")
 
+    for row in data:
+        if len(row) != SPLITWISE_EXPECTED_COL_COUNT:
+            raise ValueError(
+                "Cleaned Splitwise row has "
+                f"{len(row)} columns; expected {SPLITWISE_EXPECTED_COL_COUNT}: {row}"
+            )
+
     row_placeholder = "(" + ", ".join(["?"] * len(SPLITWISE_INSERT_COLUMNS)) + ")"
     placeholders = ", ".join([row_placeholder] * len(data))
+    source_columns = ", ".join(f"deduped.{column}" for column in SPLITWISE_INSERT_COLUMNS)
+    duplicate_match = " AND ".join(
+        f"splits.{column} = deduped.{column}" for column in SPLITWISE_INSERT_COLUMNS
+    )
     sql = f"""
+WITH deduped ({", ".join(SPLITWISE_INSERT_COLUMNS)}) AS (
+    VALUES {placeholders}
+)
 INSERT INTO splits ({", ".join(SPLITWISE_INSERT_COLUMNS)})
-VALUES {placeholders};
+SELECT DISTINCT {source_columns}
+FROM deduped
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM splits
+    WHERE {duplicate_match}
+);
 """.strip()
 
     params: list[str] = []
