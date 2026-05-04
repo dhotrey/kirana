@@ -44,7 +44,7 @@ def test_prepare_insert_builds_batch_insert_statement():
         ")\n"
         "INSERT INTO splits (date, description, category, cost_cents, "
         "currency, me_cents, roommate1_cents, roommate2_cents)\n"
-        "SELECT deduped.date, deduped.description, deduped.category, "
+        "SELECT DISTINCT deduped.date, deduped.description, deduped.category, "
         "deduped.cost_cents, deduped.currency, deduped.me_cents, "
         "deduped.roommate1_cents, deduped.roommate2_cents\n"
         "FROM deduped\n"
@@ -109,6 +109,35 @@ def test_prepare_insert_is_idempotent_when_replayed_against_existing_rows():
     db.execute(sql, params)
 
     assert db.execute("SELECT COUNT(*) FROM splits").fetchone() == (2,)
+
+
+def test_prepare_insert_removes_duplicate_rows_within_same_batch():
+    cleaned_rows = [
+        ["2026-02-08", "Changi", "General", 2835, "AUD", -945, 1890, -945],
+        ["2026-02-08", "Changi", "General", 2835, "AUD", -945, 1890, -945],
+    ]
+    sql, params = prepare_insert(cleaned_rows)
+
+    db = sqlite3.connect(":memory:")
+    db.execute(
+        """
+        CREATE TABLE splits (
+            id INTEGER PRIMARY KEY,
+            date TEXT NOT NULL,
+            description TEXT NOT NULL,
+            category TEXT,
+            cost_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            me_cents INTEGER NOT NULL,
+            roommate1_cents INTEGER NOT NULL,
+            roommate2_cents INTEGER NOT NULL
+        );
+        """
+    )
+
+    db.execute(sql, params)
+
+    assert db.execute("SELECT COUNT(*) FROM splits").fetchone() == (1,)
 
 
 def test_clean_splitwise_data_rejects_rows_with_unexpected_column_count():
