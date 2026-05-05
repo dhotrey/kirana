@@ -18,7 +18,7 @@ dependencies = [
     "pydantic-ai>=1.87.0",
     "pydantic-evals[logfire]>=1.87.0",
     "pytest>=9.0.3",
-    "sentence-transformers>=5.4.1",
+    "sentence-transformers[image]>=5.4.1",
 ]
 
 [tool.pytest.ini_options]

@@ -1,5 +1,6 @@
 from ingestion.d1 import (
     RECEIPT_ITEM_INSERT_BATCH_SIZE,
+    _extract_returning_id,
     build_items_insert_batches,
     build_receipt_insert,
     build_update_image_url,
@@ -70,3 +71,20 @@ def test_build_update_image_url_sql():
         "UPDATE receipts SET image_url = ? WHERE id = ?;",
         ["s3://x", 17],
     )
+
+
+def test_extract_returning_id_from_cloudflare_d1_query_shape():
+    # Cloudflare D1 SDK: SyncSinglePage[QueryResult] where page.result is a list of QueryResult
+    # and QueryResult.results holds the returned rows.
+    class FakeQueryResult:
+        def __init__(self, results):
+            self.results = results
+            self.success = True
+            self.meta = {}
+
+    class FakeSinglePage:
+        def __init__(self, result):
+            self.result = result
+
+    page = FakeSinglePage([FakeQueryResult([{"id": 123}])])
+    assert _extract_returning_id(page) == 123

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import base64
 import json
 import time
 from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
+from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.messages import BinaryImage, UserContent
 
 from ingestion.llm_utils import extract_json_text, usage_from_result
 from ingestion.prompts import receipt_extraction_prompt
@@ -18,9 +19,12 @@ if TYPE_CHECKING:
     from ingestion.context import IngestionContext
 
 
-def _image_data_url(image: ImageInput) -> str:
-    encoded = base64.b64encode(image.data).decode("ascii")
-    return f"data:{image.content_type};base64,{encoded}"
+def _google_upstream_api_key_invalid(body: object | None) -> bool:
+    try:
+        text = json.dumps(body)
+    except (TypeError, ValueError):
+        text = str(body or "")
+    return "API_KEY_INVALID" in text or "API key not valid" in text
 
 
 def _build_prompt(
@@ -28,7 +32,7 @@ def _build_prompt(
     ctx: "IngestionContext",
     *,
     previous_error: str | None,
-) -> str:
+) -> list[UserContent]:
     schema = json.dumps(Receipt.model_json_schema(), indent=2)
     prompt = receipt_extraction_prompt(ctx.prompts_dir)
     parts = [
@@ -38,11 +42,13 @@ def _build_prompt(
         schema,
         "",
         f"Image id: {image.image_id}",
-        f"Image data URL: {_image_data_url(image)}",
     ]
     if previous_error:
         parts.extend(["", f"Previous validation error: {previous_error}"])
-    return "\n".join(parts)
+    return [
+        "\n".join(parts),
+        BinaryImage(data=image.data, media_type=image.content_type),
+    ]
 
 
 def extract_receipt(
@@ -57,13 +63,27 @@ def extract_receipt(
         ctx.rate_limiter.wait(log)
         log.info(f"OCR attempt {attempt} for {image.image_id}")
         prompt = _build_prompt(image, ctx, previous_error=previous_error)
-        result = ctx.gemini_agent.run_sync(prompt)
+        try:
+            result = ctx.gemini_agent.run_sync(prompt)
+        except ModelHTTPError as exc:
+            if exc.status_code == 400 and _google_upstream_api_key_invalid(exc.body):
+                gateway = ctx.cfg.cloudflare.ai_gateway_name
+                raise RuntimeError(
+                    "Google rejected the API key used behind Cloudflare AI Gateway "
+                    f"({gateway!r}): API_KEY_INVALID. Fix the Google AI Studio key on the "
+                    "gateway provider (not CLOUDFLARE_AI_GATEWAY_API_TOKEN), or set "
+                    "GOOGLE_API_KEY or GEMINI_API_KEY in the environment to call Gemini "
+                    "directly (see ingestion/context.py). "
+                    "Gateway: Cloudflare Dashboard → AI Gateway → provider for Gemini. "
+                    "Key: https://aistudio.google.com/apikey"
+                ) from exc
+            raise
         usage = usage_from_result(result)
         token_totals.input_tokens += usage.input_tokens
         token_totals.output_tokens += usage.output_tokens
 
         json_text = extract_json_text(result)
-        log.debug(f"raw Gemini JSON candidate: {json_text[:500]}")
+        log.debug(f"raw Gemini JSON candidate: {json_text}")
         try:
             receipt = Receipt.model_validate_json(
                 json_text,

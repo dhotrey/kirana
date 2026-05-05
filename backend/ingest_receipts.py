@@ -7,6 +7,13 @@ from ingestion.context import build_context
 from ingestion.observability import configure_logfire, configure_logging
 from ingestion.pipeline import ingest_one
 from ingestion.sources.disk import DiskImageSource, from_disk_path
+import os
+import dotenv
+dotenv.load_dotenv()
+
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,6 +39,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     ctx = build_context(args.config)
+    
     configure_logging(ctx.cfg)
     configure_logfire()
     ctx = ctx.with_dry_run(True if args.dry_run else None)

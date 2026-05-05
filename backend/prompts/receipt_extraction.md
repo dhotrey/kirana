@@ -9,6 +9,9 @@ Use these rules:
 - Use ISO 8601 for `date` (`YYYY-MM-DD`) and 24-hour `time` (`HH:MM:SS`) when available.
 - Use `null` for fields that are not visible or cannot be inferred confidently.
 - `store_name` and every item's `item_name` must be non-empty if present on the receipt.
+- `quantity` is 1 unless inferred otherwise from the reciept.
+- `unit price` is the cost of of 1 unit item
+- `total price` is `quantity` * `unit price`. in most cases it is common for `unit price` and `total price` to match for `quantity` 1. 
 - `subtotal`, `gst`, `discounts`, `item_price`, `unit_price`, and `total_price` are decimal dollar values, not cents.
 - `discounts` should be the positive dollar amount of discounts applied.
 - For each item, set `total_price` to the line total actually charged.

@@ -120,15 +120,43 @@ def _query(ctx: "IngestionContext", sql: str, params: list[Any] | None = None) -
 
 
 def _extract_returning_id(result: Any) -> int:
-    rows = getattr(result, "result", None) or getattr(result, "results", None)
-    if isinstance(rows, dict):
-        rows = rows.get("results") or rows.get("rows") or rows.get("result")
+    """
+    Cloudflare D1 SDK shapes vary depending on client + method.
+
+    `d1.database.query(...)` returns a `SyncSinglePage[QueryResult]`, where:
+    - page.result is a list of QueryResult
+    - QueryResult.results is the list of returned rows (dict-like), e.g. [{"id": 123}]
+    """
+
+    def _unwrap(obj: Any) -> Any:
+        if obj is None:
+            return None
+        # Common containers from SDK/HTTP clients
+        for attr in ("result", "results", "rows"):
+            if hasattr(obj, attr):
+                val = getattr(obj, attr)
+                if val is not None:
+                    return val
+        if isinstance(obj, dict):
+            return obj.get("results") or obj.get("rows") or obj.get("result")
+        return None
+
+    rows = _unwrap(result)
+    # SyncSinglePage[QueryResult] -> list[QueryResult]
+    if isinstance(rows, list) and rows and hasattr(rows[0], "results"):
+        rows = _unwrap(rows[0])
+    # QueryResult -> list[dict]
+    if hasattr(result, "results") and isinstance(rows, list) and rows and hasattr(rows[0], "results"):
+        rows = _unwrap(rows[0])
+
     if isinstance(rows, list) and rows:
         first = rows[0]
-        if isinstance(first, dict):
+        if isinstance(first, dict) and "id" in first:
             return int(first["id"])
+        # Some clients may return pydantic/attrs objects for rows
         if hasattr(first, "id"):
-            return int(first.id)
+            return int(getattr(first, "id"))
+
     raise ValueError(f"Could not extract receipt id from D1 result: {result!r}")
 
 

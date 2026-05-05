@@ -1,36 +1,23 @@
 from __future__ import annotations
 
 import time
-from contextlib import contextmanager, nullcontext
-from typing import Iterator
 
+from ingestion.context import IngestionContext
 from ingestion.canonical_log import build_canonical_log, write_canonical_log
 from ingestion.d1 import insert_items, insert_receipt, update_image_url
 from ingestion.gemini import extract_receipt
 from ingestion.mistral import summarise
-from ingestion.observability import Stopwatch, bind_image
+from ingestion.observability import bind_image
 from ingestion.result import IngestionResult
 from ingestion.schemas import Receipt
 from ingestion.sources import ImageInput
 from ingestion.stats import RetryCounts, TokenAccumulator
 from ingestion.tigris import upload_artifacts, write_dry_run_artifacts
 from ingestion.vectorize import upsert_vector
+import logfire
 
 
-@contextmanager
-def _span(name: str, **attrs) -> Iterator[None]:
-    try:
-        import logfire
-
-    except Exception:
-        cm = nullcontext()
-    else:
-        cm = logfire.span(name, **attrs)
-    with cm:
-        yield
-
-
-def ingest_one(image: ImageInput, ctx) -> IngestionResult:
+def ingest_one(image: ImageInput, ctx: IngestionContext) -> IngestionResult:
     log = bind_image(image.image_id)
     ctx = ctx.with_log(log)
     timings: dict[str, float] = {}
@@ -46,21 +33,22 @@ def ingest_one(image: ImageInput, ctx) -> IngestionResult:
     dry_run = ctx.effective_dry_run
 
     try:
-        with _span("ingest", image_id=image.image_id):
-            with Stopwatch("ocr", timings), _span("ingest.ocr", image_id=image.image_id):
+        with logfire.span(f"ingest_{image.image_id}", image_id=image.image_id):
+            with logfire.span(f"ingest_{image.image_id}.ocr", image_id=image.image_id):
                 receipt, ocr_retries, gemini_tokens = extract_receipt(image, ctx)
+                ctx.log.debug(f"receipt: {receipt}")
                 retries.ocr_validation_retries = ocr_retries
                 retries.total_retries = ocr_retries
                 tokens.add_gemini(gemini_tokens)
 
-            with Stopwatch("summary", timings), _span(
-                "ingest.summary", image_id=image.image_id
+            with logfire.span(
+                f"ingest_{image.image_id}.summary", image_id=image.image_id
             ):
                 summary, mistral_tokens = summarise(receipt, ctx)
                 tokens.add_mistral(mistral_tokens)
 
-            with Stopwatch("db_insert", timings), _span(
-                "ingest.db_insert", image_id=image.image_id
+            with logfire.span(
+                f"ingest_{image.image_id}.db_insert", image_id=image.image_id
             ):
                 if dry_run:
                     receipt_id = 0
@@ -69,24 +57,28 @@ def ingest_one(image: ImageInput, ctx) -> IngestionResult:
                     receipt_id = insert_receipt(ctx, receipt)
                     insert_items(ctx, receipt_id, receipt.items)
 
-            with Stopwatch("embedding", timings), _span(
-                "ingest.embedding", image_id=image.image_id, receipt_id=receipt_id
+            with logfire.span(
+                f"ingest_{image.image_id}.embedding",
+                image_id=image.image_id,
+                receipt_id=receipt_id,
             ):
                 vector = ctx.embedder.embed(summary)
                 log.debug(f"vector dim={len(vector)}")
 
-            with Stopwatch("vectorize_upsert", timings), _span(
-                "ingest.vectorize_upsert",
+            with logfire.span(
+                f"ingest_{image.image_id}.vectorize_upsert",
                 image_id=image.image_id,
                 receipt_id=receipt_id,
             ):
                 if dry_run:
-                    log.info(f"dry-run: skipping Vectorize upsert (vec dim={len(vector)})")
+                    log.info(
+                        f"dry-run: skipping Vectorize upsert (vec dim={len(vector)})"
+                    )
                 else:
                     upsert_vector(ctx, receipt_id, vector, receipt)
 
-            with Stopwatch("tigris_upload", timings), _span(
-                "ingest.tigris_upload",
+            with logfire.span(
+                f"ingest_{image.image_id}.tigris_upload",
                 image_id=image.image_id,
                 receipt_id=receipt_id,
             ):
@@ -94,8 +86,16 @@ def ingest_one(image: ImageInput, ctx) -> IngestionResult:
                     log.info("dry-run: skipping Tigris upload")
                     write_dry_run_artifacts(ctx.logs_dir, image, receipt, summary)
                 else:
-                    image_url = upload_artifacts(ctx, receipt_id, image, receipt, summary)
-                    update_image_url(ctx, receipt_id, image_url)
+                    image_url = upload_artifacts(
+                        ctx, receipt_id, image, receipt, summary
+                    )
+                    with logfire.span(
+                        f"ingest_{image.image_id}.tigris_upload.update_image_url",
+                        image_id=image.image_id,
+                        receipt_id=receipt_id,
+                        image_url=image_url,
+                    ):
+                        update_image_url(ctx, receipt_id, image_url)
 
         outcome = "success"
     except Exception as exc:

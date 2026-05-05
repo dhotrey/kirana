@@ -4,15 +4,20 @@ from datetime import date as Date, time as Time
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 
 DEFAULT_SUM_TOLERANCE_PCT = Decimal("5.0")
 
 
-def _decimal_from_context(
-    info: ValidationInfo, key: str, default: Decimal
-) -> Decimal:
+def _decimal_from_context(info: ValidationInfo, key: str, default: Decimal) -> Decimal:
     context = info.context if isinstance(info.context, dict) else {}
     value = context.get(key, default)
     return Decimal(str(value))
@@ -22,8 +27,7 @@ class ReceiptItem(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     item_name: str = Field(min_length=1)
-    item_price: Decimal | None = Field(default=None, ge=0)
-    quantity: float | None = Field(default=None, ge=0)
+    quantity: int = Field(default=1, ge=1)
     unit_price: Decimal | None = Field(default=None, ge=0)
     total_price: Decimal = Field(ge=0)
     inferred_category: str | None = None
@@ -37,7 +41,7 @@ class Receipt(BaseModel):
     time: Time | None = None
     address: str | None = None
     item_count: int | None = Field(default=None, ge=0)
-    subtotal: Decimal | None = Field(default=None, ge=0)
+    subtotal: Decimal = Field(default=Decimal("0"), ge=0)
     gst: Decimal | None = Field(default=None, ge=0)
     discounts: Decimal | None = Field(default=None, ge=0)
     items: list[ReceiptItem] = Field(default_factory=list)
