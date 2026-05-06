@@ -19,18 +19,25 @@ if TYPE_CHECKING:
     from ingestion.context import IngestionContext
 
 
-def _google_upstream_api_key_invalid(body: object | None) -> bool:
-    try:
-        text = json.dumps(body)
-    except (TypeError, ValueError):
-        text = str(body or "")
-    return "API_KEY_INVALID" in text or "API key not valid" in text
+MAX_PREVIOUS_OUTPUT_CHARS = 12000
+
+
+def _retry_output_context(json_text: str) -> str:
+    if len(json_text) <= MAX_PREVIOUS_OUTPUT_CHARS:
+        return json_text
+
+    omitted = len(json_text) - MAX_PREVIOUS_OUTPUT_CHARS
+    return (
+        json_text[:MAX_PREVIOUS_OUTPUT_CHARS]
+        + f"\n\n[Previous output truncated; omitted {omitted} characters.]"
+    )
 
 
 def _build_prompt(
     image: ImageInput,
     ctx: "IngestionContext",
     *,
+    previous_json_text: str | None,
     previous_error: str | None,
 ) -> list[UserContent]:
     schema = json.dumps(Receipt.model_json_schema(), indent=2)
@@ -43,6 +50,23 @@ def _build_prompt(
         "",
         f"Image id: {image.image_id}",
     ]
+    if previous_json_text or previous_error:
+        parts.extend(
+            [
+                "",
+                "The previous attempt failed. Return a complete corrected JSON object "
+                "that conforms to the schema. Preserve correctly extracted fields where "
+                "possible, but fix the specific issue below.",
+            ]
+        )
+    if previous_json_text:
+        parts.extend(
+            [
+                "",
+                "Previous output to repair:",
+                _retry_output_context(previous_json_text),
+            ]
+        )
     if previous_error:
         parts.extend(["", f"Previous validation error: {previous_error}"])
     return [
@@ -57,27 +81,22 @@ def extract_receipt(
     log = ctx.log
     retries = 0
     token_totals = TokenStats()
+    previous_json_text: str | None = None
     previous_error: str | None = None
 
     for attempt in range(1, ctx.cfg.ingestion.max_ocr_retries + 2):
         ctx.rate_limiter.wait(log)
         log.info(f"OCR attempt {attempt} for {image.image_id}")
-        prompt = _build_prompt(image, ctx, previous_error=previous_error)
+        prompt = _build_prompt(
+            image,
+            ctx,
+            previous_json_text=previous_json_text,
+            previous_error=previous_error,
+        )
         try:
             result = ctx.gemini_agent.run_sync(prompt)
         except ModelHTTPError as exc:
-            if exc.status_code == 400 and _google_upstream_api_key_invalid(exc.body):
-                gateway = ctx.cfg.cloudflare.ai_gateway_name
-                raise RuntimeError(
-                    "Google rejected the API key used behind Cloudflare AI Gateway "
-                    f"({gateway!r}): API_KEY_INVALID. Fix the Google AI Studio key on the "
-                    "gateway provider (not CLOUDFLARE_AI_GATEWAY_API_TOKEN), or set "
-                    "GOOGLE_API_KEY or GEMINI_API_KEY in the environment to call Gemini "
-                    "directly (see ingestion/context.py). "
-                    "Gateway: Cloudflare Dashboard → AI Gateway → provider for Gemini. "
-                    "Key: https://aistudio.google.com/apikey"
-                ) from exc
-            raise
+            raise RuntimeError(f"Gemini OCR request failed: {exc}") from exc
         usage = usage_from_result(result)
         token_totals.input_tokens += usage.input_tokens
         token_totals.output_tokens += usage.output_tokens
@@ -92,6 +111,7 @@ def extract_receipt(
             log.info(f"OCR succeeded after {retries} retries")
             return receipt, retries, token_totals
         except (ValidationError, json.JSONDecodeError, ValueError) as exc:
+            previous_json_text = json_text
             previous_error = str(exc)
             if attempt > ctx.cfg.ingestion.max_ocr_retries:
                 log.debug(f"OCR validation failed terminally: {previous_error}")
