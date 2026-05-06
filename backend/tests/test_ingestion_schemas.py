@@ -54,7 +54,9 @@ def test_items_sum_boundary_uses_context_tolerance():
 
 
 def test_missing_or_zero_subtotal_skips_sum_check():
-    Receipt.model_validate(valid_receipt(subtotal=None, items=[]))
+    data = valid_receipt(items=[])
+    del data["subtotal"]
+    Receipt.model_validate(data)
     Receipt.model_validate(valid_receipt(subtotal="0", items=[]))
 
 

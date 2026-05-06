@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-import time
-from contextlib import contextmanager
-from typing import Iterator
 
 from loguru import logger
 
@@ -26,30 +23,6 @@ def configure_logging(cfg: Config) -> None:
 
 def bind_image(image_id: str):
     return logger.bind(image_id=image_id)
-
-
-@contextmanager
-def stopwatch(name: str, timings: dict[str, float]) -> Iterator[None]:
-    started = time.perf_counter()
-    try:
-        yield
-    finally:
-        timings[name] = round(time.perf_counter() - started, 4)
-
-
-class Stopwatch:
-    def __init__(self, name: str, timings: dict[str, float]) -> None:
-        self.name = name
-        self.timings = timings
-        self._started = 0.0
-
-    def __enter__(self) -> "Stopwatch":
-        self._started = time.perf_counter()
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> None:
-        self.timings[self.name] = round(time.perf_counter() - self._started, 4)
-
 
 
 
