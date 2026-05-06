@@ -12,6 +12,7 @@ def _configured_log_level() -> str:
 
 
 logger.remove()
+logger.configure(extra={"image_id": "-"})
 logger.add(sys.stderr, level=_configured_log_level())
 
 log = logger

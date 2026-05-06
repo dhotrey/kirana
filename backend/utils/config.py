@@ -17,5 +17,6 @@ def load_config(config_path: str) -> Config:
                 "tigris": infra_config["tigris"],
                 "log_level": infra_config["kirana"]["log_level"],
                 "kb": infra_config["knowledge_base"],
+                "ingestion": infra_config["ingestion"],
             }
         )

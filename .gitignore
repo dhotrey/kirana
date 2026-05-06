@@ -221,3 +221,4 @@ __marimo__/
 knowledge-base/*
 .codex
 .vscode
+backend/logs/
