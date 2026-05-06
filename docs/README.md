@@ -7,4 +7,5 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 ## Current Documents
 
 - [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `backend/setup.py`.
-
+- [Ingestion Pipeline](./ingestion.md): high-level receipt ingestion architecture, storage responsibilities, observability, and error handling.
+- [Receipt Ingestion CLI](./ingest_receipts.md): application flow for `backend/ingest_receipts.py`, including diagrams for input selection, per-receipt processing, dry-run mode, and data movement.
