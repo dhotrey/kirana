@@ -4,7 +4,7 @@ import time
 
 from ingestion.context import IngestionContext
 from ingestion.canonical_log import build_canonical_log, write_canonical_log
-from ingestion.d1 import insert_items, insert_receipt, update_image_url
+from ingestion.d1 import insert_receipt_with_items, update_image_url
 from ingestion.gemini import extract_receipt
 from ingestion.mistral import summarise
 from ingestion.observability import bind_image
@@ -54,8 +54,7 @@ def ingest_one(image: ImageInput, ctx: IngestionContext) -> IngestionResult:
                     receipt_id = 0
                     log.info("dry-run: skipping D1 insert")
                 else:
-                    receipt_id = insert_receipt(ctx, receipt)
-                    insert_items(ctx, receipt_id, receipt.items)
+                    receipt_id = insert_receipt_with_items(ctx, receipt)
 
             with logfire.span(
                 f"ingest_{image.image_id}.embedding",

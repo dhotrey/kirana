@@ -178,6 +178,27 @@ def insert_items(ctx: "IngestionContext", receipt_id: int, items: list[ReceiptIt
         _query(ctx, sql, params)
 
 
+def delete_receipt(ctx: "IngestionContext", receipt_id: int) -> None:
+    _query(ctx, "DELETE FROM receipt_items WHERE receipt_id = ?;", [receipt_id])
+    _query(ctx, "DELETE FROM receipts WHERE id = ?;", [receipt_id])
+
+
+def insert_receipt_with_items(ctx: "IngestionContext", receipt: Receipt) -> int:
+    receipt_id = insert_receipt(ctx, receipt)
+    try:
+        insert_items(ctx, receipt_id, receipt.items)
+    except Exception:
+        ctx.log.warning(
+            f"rolling back partial receipt insert id={receipt_id} after item failure"
+        )
+        try:
+            delete_receipt(ctx, receipt_id)
+        except Exception:
+            ctx.log.exception(f"failed to roll back partial receipt insert id={receipt_id}")
+        raise
+    return receipt_id
+
+
 def update_image_url(ctx: "IngestionContext", receipt_id: int, image_url: str) -> None:
     sql, params = build_update_image_url(image_url, receipt_id)
     _query(ctx, sql, params)

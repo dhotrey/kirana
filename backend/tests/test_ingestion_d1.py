@@ -1,9 +1,15 @@
+from types import SimpleNamespace
+
+import pytest
+from pydantic import SecretStr
+
 from ingestion.d1 import (
     RECEIPT_ITEM_INSERT_BATCH_SIZE,
     _extract_returning_id,
     build_items_insert_batches,
     build_receipt_insert,
     build_update_image_url,
+    insert_receipt_with_items,
     receipt_total_cents,
     to_cents,
 )
@@ -88,3 +94,61 @@ def test_extract_returning_id_from_cloudflare_d1_query_shape():
 
     page = FakeSinglePage([FakeQueryResult([{"id": 123}])])
     assert _extract_returning_id(page) == 123
+
+
+def test_insert_receipt_with_items_rolls_back_partial_insert_on_item_failure():
+    class FakeLog:
+        def debug(self, *_args):
+            pass
+
+        def info(self, *_args):
+            pass
+
+        def warning(self, *_args):
+            pass
+
+        def exception(self, *_args):
+            pass
+
+    class FakeDatabase:
+        def __init__(self):
+            self.calls = []
+            self.item_insert_count = 0
+
+        def query(self, *, database_id, account_id, sql, params):
+            self.calls.append({"sql": sql, "params": params})
+            if "RETURNING id" in sql:
+                return SimpleNamespace(result=[SimpleNamespace(results=[{"id": 42}])])
+            if sql.startswith("INSERT INTO receipt_items"):
+                self.item_insert_count += 1
+                if self.item_insert_count == 2:
+                    raise RuntimeError("simulated D1 item batch failure")
+            return SimpleNamespace(result=[])
+
+    db = FakeDatabase()
+    ctx = SimpleNamespace(
+        cf_client=SimpleNamespace(d1=SimpleNamespace(database=db)),
+        cloudflare_account_id=SecretStr("acct"),
+        log=FakeLog(),
+    )
+    large_receipt = Receipt(
+        store_name="Coles",
+        item_count=RECEIPT_ITEM_INSERT_BATCH_SIZE + 1,
+        subtotal="17.00",
+        items=[
+            ReceiptItem(item_name=f"Item {idx}", total_price="1.00")
+            for idx in range(RECEIPT_ITEM_INSERT_BATCH_SIZE + 1)
+        ],
+    )
+
+    with pytest.raises(RuntimeError, match="simulated D1 item batch failure"):
+        insert_receipt_with_items(ctx, large_receipt)
+
+    item_insert_sqls = [
+        call["sql"] for call in db.calls if call["sql"].startswith("INSERT INTO receipt_items")
+    ]
+    assert len(item_insert_sqls) == 2
+    assert db.calls[-2:] == [
+        {"sql": "DELETE FROM receipt_items WHERE receipt_id = ?;", "params": [42]},
+        {"sql": "DELETE FROM receipts WHERE id = ?;", "params": [42]},
+    ]
