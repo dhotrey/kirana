@@ -107,6 +107,13 @@ def build_update_image_url(image_url: str, receipt_id: int) -> tuple[str, list[A
     return "UPDATE receipts SET image_url = ? WHERE id = ?;", [image_url, receipt_id]
 
 
+def build_delete_receipt(receipt_id: int) -> list[tuple[str, list[Any]]]:
+    return [
+        ("DELETE FROM receipt_items WHERE receipt_id = ?;", [receipt_id]),
+        ("DELETE FROM receipts WHERE id = ?;", [receipt_id]),
+    ]
+
+
 def _query(ctx: "IngestionContext", sql: str, params: list[Any] | None = None) -> Any:
     params = params or []
     ctx.log.debug(f"D1 SQL: {sql}")
@@ -182,3 +189,9 @@ def update_image_url(ctx: "IngestionContext", receipt_id: int, image_url: str) -
     sql, params = build_update_image_url(image_url, receipt_id)
     _query(ctx, sql, params)
     ctx.log.info("image_url written back to D1")
+
+
+def delete_receipt(ctx: "IngestionContext", receipt_id: int) -> None:
+    for sql, params in build_delete_receipt(receipt_id):
+        _query(ctx, sql, params)
+    ctx.log.info(f"deleted partial D1 receipt id={receipt_id}")

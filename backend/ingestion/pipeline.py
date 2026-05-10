@@ -4,7 +4,7 @@ import time
 
 from ingestion.context import IngestionContext
 from ingestion.canonical_log import build_canonical_log, write_canonical_log
-from ingestion.d1 import insert_items, insert_receipt, update_image_url
+from ingestion.d1 import delete_receipt, insert_items, insert_receipt, update_image_url
 from ingestion.gemini import extract_receipt
 from ingestion.mistral import summarise
 from ingestion.observability import bind_image
@@ -102,6 +102,16 @@ def ingest_one(image: ImageInput, ctx: IngestionContext) -> IngestionResult:
         log.exception("ingestion failed")
         error = f"{type(exc).__name__}: {exc}"
         outcome = "failure"
+        if receipt_id is not None and not dry_run:
+            try:
+                delete_receipt(ctx, receipt_id)
+                receipt_id = None
+            except Exception as cleanup_exc:
+                log.exception("failed to delete partial D1 receipt")
+                error = (
+                    f"{error}; cleanup failed: "
+                    f"{type(cleanup_exc).__name__}: {cleanup_exc}"
+                )
     finally:
         timings["total"] = round(time.perf_counter() - started, 4)
         canonical = build_canonical_log(

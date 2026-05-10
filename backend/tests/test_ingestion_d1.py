@@ -1,6 +1,7 @@
 from ingestion.d1 import (
     RECEIPT_ITEM_INSERT_BATCH_SIZE,
     _extract_returning_id,
+    build_delete_receipt,
     build_items_insert_batches,
     build_receipt_insert,
     build_update_image_url,
@@ -71,6 +72,13 @@ def test_build_update_image_url_sql():
         "UPDATE receipts SET image_url = ? WHERE id = ?;",
         ["s3://x", 17],
     )
+
+
+def test_build_delete_receipt_removes_items_before_receipt():
+    assert build_delete_receipt(17) == [
+        ("DELETE FROM receipt_items WHERE receipt_id = ?;", [17]),
+        ("DELETE FROM receipts WHERE id = ?;", [17]),
+    ]
 
 
 def test_extract_returning_id_from_cloudflare_d1_query_shape():
