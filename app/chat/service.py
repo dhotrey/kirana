@@ -4,7 +4,7 @@ import os
 import sqlite3
 import time
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager, nullcontext
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +12,13 @@ from typing import Any
 
 import aiosqlite
 import logfire
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -332,6 +338,146 @@ class ChatService:
             response.content,
         )
         return updated, response
+
+    async def chat_stream(
+        self,
+        *,
+        message: str,
+        model_name: str,
+        thread_id: str | None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        started_at = time.perf_counter()
+        self._validate_model(model_name)
+        conversation = await self._ensure_conversation(thread_id, message)
+        model_identifier = self.cfg.kirana.model_identifiers[model_name]
+
+        yield {
+            "type": "start",
+            "thread_id": conversation.id,
+            "conversation": conversation.model_dump(),
+        }
+
+        span = nullcontext()
+        if _logfire_enabled():
+            span = logfire.span(
+                "chat_request",
+                thread_id=conversation.id,
+                model_name=model_name,
+                model_identifier=model_identifier,
+                query=message,
+                query_chars=len(message),
+                streaming=True,
+            )
+
+        with span as chat_span:
+            logger.info(
+                "chat stream request thread={} model={} chars={} query={!r}",
+                conversation.id,
+                model_name,
+                len(message),
+                message,
+            )
+            if _logfire_enabled():
+                logfire.info(
+                    "chat query",
+                    thread_id=conversation.id,
+                    model_name=model_name,
+                    model_identifier=model_identifier,
+                    query=message,
+                    query_chars=len(message),
+                    streaming=True,
+                )
+
+            if model_routes_via_gemini(model_identifier):
+                self.rate_limiter.wait(logger)
+
+            async for chunk, metadata in self.graph.astream(
+                {"messages": [HumanMessage(content=message)]},
+                self._thread_config(conversation.id, model_name=model_name),
+                stream_mode="messages",
+            ):
+                if not isinstance(chunk, AIMessageChunk):
+                    continue
+                node_name = (
+                    metadata.get("langgraph_node")
+                    if isinstance(metadata, dict)
+                    else None
+                )
+                if node_name is not None and node_name != "agent":
+                    continue
+                content = chunk.content
+                text = content if isinstance(content, str) else str(content)
+                if not text:
+                    continue
+                yield {"type": "delta", "content": text}
+
+            state = await self.graph.aget_state(self._thread_config(conversation.id))
+            raw_messages: Sequence[BaseMessage] = state.values.get("messages", [])
+            response_message = next(
+                (
+                    candidate
+                    for candidate in reversed(raw_messages)
+                    if isinstance(candidate, AIMessage)
+                ),
+                None,
+            )
+            if response_message is None:
+                raise RuntimeError("model response did not include an assistant message")
+
+            total_tat_seconds = time.perf_counter() - started_at
+            response = _message_to_schema(
+                response_message, total_tat_seconds=total_tat_seconds
+            )
+            if response is None:
+                raise RuntimeError("model response could not be serialized")
+
+            token_usage = _extract_token_usage(response_message)
+            if _logfire_enabled():
+                attributes = {
+                    "response": response.content,
+                    "response_chars": len(response.content),
+                    "input_tokens": token_usage["input_tokens"],
+                    "output_tokens": token_usage["output_tokens"],
+                    "total_tokens": token_usage["total_tokens"],
+                    "total_tat_seconds": total_tat_seconds,
+                }
+                if chat_span is not None:
+                    chat_span.set_attributes(attributes)
+                logfire.info(
+                    "chat response",
+                    thread_id=conversation.id,
+                    model_name=model_name,
+                    model_identifier=model_identifier,
+                    response=response.content,
+                    response_chars=len(response.content),
+                    input_tokens=token_usage["input_tokens"],
+                    output_tokens=token_usage["output_tokens"],
+                    total_tokens=token_usage["total_tokens"],
+                    total_tat_seconds=total_tat_seconds,
+                    streaming=True,
+                )
+
+        await self._touch_conversation(conversation.id)
+        updated = await self.get_conversation(conversation.id)
+        if updated is None:
+            raise RuntimeError("conversation disappeared during chat request")
+        logger.info(
+            "chat stream response thread={} model={} chars={} total_tat_seconds={:.3f} input_tokens={} output_tokens={} total_tokens={} response={!r}",
+            conversation.id,
+            model_name,
+            len(response.content),
+            response.stats.total_tat_seconds if response.stats is not None else 0.0,
+            token_usage["input_tokens"],
+            token_usage["output_tokens"],
+            token_usage["total_tokens"],
+            response.content,
+        )
+        yield {
+            "type": "end",
+            "thread_id": conversation.id,
+            "conversation": updated.model_dump(),
+            "message": response.model_dump(exclude_none=True),
+        }
 
     def _build_graph(self) -> Any:
         graph = StateGraph(MessagesState)

@@ -44,4 +44,6 @@ def build_chat_model(model_identifier: str, cfg: Config) -> ChatOpenAI:
         base_url=cloudflare_gateway_base_url(cfg),
         default_headers=cloudflare_gateway_headers(model_identifier),
         temperature=0,
+        streaming=True,
+        stream_usage=True,
     )

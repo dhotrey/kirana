@@ -6,6 +6,7 @@ os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
 os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,7 +14,7 @@ import logfire
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from loguru import logger
 
 from chat.schemas import (
@@ -132,6 +133,35 @@ async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
         thread_id=conversation.id,
         conversation=conversation,
         message=message,
+    )
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(payload: ChatRequest, request: Request) -> StreamingResponse:
+    service = chat_service(request)
+
+    async def event_generator():
+        try:
+            async for event in service.chat_stream(
+                message=payload.message,
+                model_name=payload.model,
+                thread_id=payload.thread_id,
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+        except ValueError as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+        except Exception as exc:
+            logger.exception("chat stream failed")
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

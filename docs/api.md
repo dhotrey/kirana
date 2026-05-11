@@ -220,6 +220,56 @@ If `thread_id` is omitted or unknown, the service creates a new conversation and
 - `400 Bad Request`: unknown model alias.
 - `422 Unprocessable Entity`: malformed request body or empty `message`.
 
+## `POST /api/chat/stream`
+
+Streaming variant of `POST /api/chat`. Same request body as `POST /api/chat`. Streams tokens from the Cloudflare AI Gateway to the UI as Server-Sent Events (SSE).
+
+### Request
+
+```json
+{
+  "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+  "model": "mistral",
+  "message": "Reply with exactly: pong"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `thread_id` | string or null | No | Existing conversation UUID. |
+| `model` | string | Yes | Model alias from `GET /api/models`. |
+| `message` | string | Yes | User message. Must be non-empty. |
+
+### Response
+
+`200 OK` with `content-type: text/event-stream`. Each event is emitted as a single `data:` line containing a JSON object terminated by a blank line.
+
+Event types:
+
+- `start`: emitted once before any token deltas. Contains `thread_id` and the resolved `conversation` object (created on the fly if `thread_id` was omitted or unknown).
+- `delta`: emitted repeatedly as token chunks arrive from the model. Contains the incremental `content` string for the assistant message.
+- `end`: emitted once after the model finishes. Contains `thread_id`, the refreshed `conversation`, and the full assistant `message` (including `stats` with `total_tat_seconds`, `input_tokens`, `output_tokens`, and `total_tokens`).
+- `error`: emitted if the request fails (e.g. unknown model). Contains a `detail` string.
+
+Example stream:
+
+```
+data: {"type":"start","thread_id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","conversation":{"id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","title":"Reply with exactly: pong","created_at":"2026-05-11T02:36:26.783Z","updated_at":"2026-05-11T02:36:26.783Z"}}
+
+data: {"type":"delta","content":"po"}
+
+data: {"type":"delta","content":"ng"}
+
+data: {"type":"end","thread_id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","conversation":{"id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","title":"Reply with exactly: pong","created_at":"2026-05-11T02:36:26.783Z","updated_at":"2026-05-11T02:37:34.207Z"},"message":{"role":"assistant","content":"pong","stats":{"total_tat_seconds":1.347,"input_tokens":18,"output_tokens":3,"total_tokens":21}}}
+```
+
+### Errors
+
+Errors during streaming are emitted as inline `error` events on the SSE stream rather than HTTP error status codes once the stream has started.
+
+- `error` event with `detail` for unknown model alias or runtime failures.
+- `422 Unprocessable Entity`: malformed request body or empty `message` (rejected before the stream starts).
+
 ## Observability
 
 Chat requests are instrumented with Logfire when `KIRANA_DISABLE_LOGFIRE` is not set to `1`, `true`, or `yes`.
