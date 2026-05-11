@@ -287,10 +287,6 @@
         color: var(--accent-strong);
       }
 
-      .message.has-stats {
-        cursor: help;
-      }
-
       .message.assistant.streaming::after {
         content: "▍";
         display: inline-block;
@@ -306,27 +302,12 @@
       }
 
       .message-stats {
-        position: absolute;
-        left: 0;
-        bottom: calc(100% + 8px);
-        z-index: 2;
-        display: none;
-        width: max-content;
-        max-width: min(320px, 80vw);
-        padding: 7px 9px;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        background: #26231d;
-        color: #fffaf0;
+        align-self: flex-start;
+        margin-top: -8px;
+        padding: 0 2px;
+        color: var(--muted);
         font-size: 12px;
         line-height: 1.35;
-        white-space: normal;
-        box-shadow: 0 10px 24px rgba(38, 35, 29, 0.22);
-      }
-
-      .message.has-stats:hover .message-stats,
-      .message.has-stats:focus .message-stats {
-        display: block;
       }
 
       .composer {
@@ -825,19 +806,15 @@
           node.textContent = message.content;
         }
 
-        if (message.role === "assistant" && message.stats) {
-          const stats = formatStats(message.stats);
-          node.classList.add("has-stats");
-          node.tabIndex = 0;
-          node.title = stats;
+        els.messages.append(node);
 
-          const statsNode = document.createElement("span");
+        if (message.role === "assistant" && message.stats) {
+          const statsNode = document.createElement("div");
           statsNode.className = "message-stats";
-          statsNode.textContent = stats;
-          node.append(statsNode);
+          statsNode.textContent = formatStats(message.stats);
+          els.messages.append(statsNode);
         }
 
-        els.messages.append(node);
         els.messages.scrollTop = els.messages.scrollHeight;
         return node;
       }
@@ -861,14 +838,10 @@
             const finalContent = (message && message.content) || buffer;
             node.replaceChildren(renderMarkdown(finalContent));
             if (message && message.stats) {
-              const stats = formatStats(message.stats);
-              node.classList.add("has-stats");
-              node.tabIndex = 0;
-              node.title = stats;
-              const statsNode = document.createElement("span");
+              const statsNode = document.createElement("div");
               statsNode.className = "message-stats";
-              statsNode.textContent = stats;
-              node.append(statsNode);
+              statsNode.textContent = formatStats(message.stats);
+              node.after(statsNode);
             }
             els.messages.scrollTop = els.messages.scrollHeight;
           },

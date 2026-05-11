@@ -140,7 +140,7 @@ Returns `204 No Content` on success.
 
 Returns the persisted LangGraph message history for an active conversation.
 
-The persisted message history returns message roles and content. Per-request timing stats are returned by the immediate `/api/chat` response because `total_tat_seconds` measures the full API request turnaround.
+The persisted message history returns message roles and content. Per-request timing stats are returned in the final `end` event of the `/api/chat/stream` response because `total_tat_seconds` measures the full API request turnaround.
 
 ### Path Parameters
 
@@ -167,62 +167,13 @@ The persisted message history returns message roles and content. Per-request tim
 
 - `404 Not Found`: conversation does not exist.
 
-## `POST /api/chat`
+## `POST /api/chat/stream`
 
-Sends a user message to the LangGraph chat graph. The graph currently has an agent node and a dedicated tool-calling node with conditional routing, even though no tools are registered yet. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph currently has an agent node and a dedicated tool-calling node with conditional routing, even though no tools are registered yet. The model call is routed through Cloudflare AI Gateway using the selected model alias.
 
 Each model call is prefixed with `prompts/system_prompt.md` plus a runtime date line formatted as `Today's date is YYYY-MM-DD.`. The system message is injected at call time and is not persisted in the conversation transcript returned by `/api/conversations/{thread_id}/messages`.
 
 If `thread_id` is omitted or unknown, the service creates a new conversation and derives the title from the first user message. No in-memory conversation state is used.
-
-### Request
-
-```json
-{
-  "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
-  "model": "mistral",
-  "message": "Reply with exactly: pong"
-}
-```
-
-| Field | Type | Required | Description |
-|---|---|---:|---|
-| `thread_id` | string or null | No | Existing conversation UUID. |
-| `model` | string | Yes | Model alias from `GET /api/models`. |
-| `message` | string | Yes | User message. Must be non-empty. |
-
-### Response
-
-```json
-{
-  "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
-  "conversation": {
-    "id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
-    "title": "Reply with exactly: pong",
-    "created_at": "2026-05-11T02:36:26.783Z",
-    "updated_at": "2026-05-11T02:37:34.207Z"
-  },
-  "message": {
-    "role": "assistant",
-    "content": "pong",
-    "stats": {
-      "total_tat_seconds": 1.347,
-      "input_tokens": 18,
-      "output_tokens": 3,
-      "total_tokens": 21
-    }
-  }
-}
-```
-
-### Errors
-
-- `400 Bad Request`: unknown model alias.
-- `422 Unprocessable Entity`: malformed request body or empty `message`.
-
-## `POST /api/chat/stream`
-
-Streaming variant of `POST /api/chat`. Same request body as `POST /api/chat`. Streams tokens from the Cloudflare AI Gateway to the UI as Server-Sent Events (SSE).
 
 ### Request
 

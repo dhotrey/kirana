@@ -20,7 +20,6 @@ from loguru import logger
 from chat.schemas import (
     ChatMessage,
     ChatRequest,
-    ChatResponse,
     CreateConversationResponse,
     ModelOption,
     UpdateConversationRequest,
@@ -116,24 +115,6 @@ async def conversation_messages(
     if await service.get_conversation(thread_id) is None:
         raise HTTPException(status_code=404, detail="conversation not found")
     return await service.messages(thread_id)
-
-
-@app.post("/api/chat", response_model=ChatResponse, response_model_exclude_none=True)
-async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
-    service = chat_service(request)
-    try:
-        conversation, message = await service.chat(
-            message=payload.message,
-            model_name=payload.model,
-            thread_id=payload.thread_id,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return ChatResponse(
-        thread_id=conversation.id,
-        conversation=conversation,
-        message=message,
-    )
 
 
 @app.post("/api/chat/stream")
