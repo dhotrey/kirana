@@ -1,0 +1,33 @@
+{
+  "image_id": "receipt32",
+  "timestamp": "2026-05-06T05:42:38.947066Z",
+  "outcome": "success",
+  "error": null,
+  "receipt_id": 26,
+  "store_name": "THE FRUIT TEMPLE",
+  "date": "2026-04-06",
+  "retries": {
+    "ocr_validation_retries": 0,
+    "total_retries": 0
+  },
+  "latency_seconds": {
+    "ocr": 0.0,
+    "summary": 0.0,
+    "db_insert": 0.0,
+    "embedding": 0.0,
+    "vectorize_upsert": 0.0,
+    "tigris_upload": 0.0,
+    "total": 36.2895
+  },
+  "tokens": {
+    "gemini_input": 2608,
+    "gemini_output": 559,
+    "mistral_input": 609,
+    "mistral_output": 103
+  },
+  "validation": {
+    "subtotal_match": true,
+    "price_sum_diff_pct": 0.0
+  },
+  "dry_run": false
+}

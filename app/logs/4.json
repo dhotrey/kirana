@@ -1,0 +1,33 @@
+{
+  "image_id": "receipt12",
+  "timestamp": "2026-05-06T05:28:06.431897Z",
+  "outcome": "success",
+  "error": null,
+  "receipt_id": 4,
+  "store_name": "ALDI STORES",
+  "date": null,
+  "retries": {
+    "ocr_validation_retries": 2,
+    "total_retries": 2
+  },
+  "latency_seconds": {
+    "ocr": 0.0,
+    "summary": 0.0,
+    "db_insert": 0.0,
+    "embedding": 0.0,
+    "vectorize_upsert": 0.0,
+    "tigris_upload": 0.0,
+    "total": 136.034
+  },
+  "tokens": {
+    "gemini_input": 9812,
+    "gemini_output": 2544,
+    "mistral_input": 1033,
+    "mistral_output": 126
+  },
+  "validation": {
+    "subtotal_match": true,
+    "price_sum_diff_pct": 0.0
+  },
+  "dry_run": false
+}

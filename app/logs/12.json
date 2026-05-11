@@ -1,0 +1,33 @@
+{
+  "image_id": "receipt2",
+  "timestamp": "2026-05-06T05:33:17.566734Z",
+  "outcome": "success",
+  "error": null,
+  "receipt_id": 12,
+  "store_name": "Woolworths",
+  "date": "2026-03-24",
+  "retries": {
+    "ocr_validation_retries": 0,
+    "total_retries": 0
+  },
+  "latency_seconds": {
+    "ocr": 0.0,
+    "summary": 0.0,
+    "db_insert": 0.0,
+    "embedding": 0.0,
+    "vectorize_upsert": 0.0,
+    "tigris_upload": 0.0,
+    "total": 49.691
+  },
+  "tokens": {
+    "gemini_input": 2622,
+    "gemini_output": 585,
+    "mistral_input": 636,
+    "mistral_output": 117
+  },
+  "validation": {
+    "subtotal_match": true,
+    "price_sum_diff_pct": 0.0
+  },
+  "dry_run": false
+}
