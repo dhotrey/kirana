@@ -1,15 +1,138 @@
+from __future__ import annotations
+
+import os
+
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+import logfire
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import FileResponse
+from loguru import logger
+
+from chat.schemas import (
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
+    CreateConversationResponse,
+    ModelOption,
+    UpdateConversationRequest,
+)
+from chat.service import ChatService, chat_service_lifespan
+from ingestion.observability import configure_logfire, configure_logging
+from utils.config import load_config
 
 load_dotenv()
 
-app = FastAPI()
+CONFIG_PATH = "config.toml"
+INDEX_PATH = Path(__file__).with_name("index.html")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cfg = load_config(CONFIG_PATH)
+    configure_logging(cfg)
+    Path(cfg.kirana.chat_log_file).parent.mkdir(parents=True, exist_ok=True)
+    logger.add(cfg.kirana.chat_log_file, level=cfg.log_level, rotation="5 MB")
+    configure_logfire()
+    if os.environ.get("KIRANA_DISABLE_LOGFIRE", "").lower() not in ("1", "true", "yes"):
+        logfire.instrument_fastapi(app)
+        logfire.instrument_openai()
+
+    async with chat_service_lifespan(cfg) as service:
+        app.state.chat_service = service
+        logger.info("chat service ready")
+        yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+def chat_service(request: Request) -> ChatService:
+    return request.app.state.chat_service
 
 
 @app.get("/")
-def hello():
-    return "Hello World!"
+async def index() -> FileResponse:
+    return FileResponse(INDEX_PATH)
+
+
+@app.get("/api/models", response_model=list[ModelOption])
+async def models(request: Request) -> list[dict[str, str]]:
+    return chat_service(request).model_options()
+
+
+@app.get("/api/conversations")
+async def conversations(request: Request):
+    return await chat_service(request).list_conversations()
+
+
+@app.post("/api/conversations", response_model=CreateConversationResponse)
+async def create_conversation(request: Request) -> CreateConversationResponse:
+    conversation = await chat_service(request).create_conversation()
+    return CreateConversationResponse(conversation=conversation)
+
+
+@app.patch("/api/conversations/{thread_id}", response_model=CreateConversationResponse)
+async def update_conversation(
+    thread_id: str, payload: UpdateConversationRequest, request: Request
+) -> CreateConversationResponse:
+    service = chat_service(request)
+    try:
+        conversation = await service.update_conversation_title(thread_id, payload.title)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return CreateConversationResponse(conversation=conversation)
+
+
+@app.delete(
+    "/api/conversations/{thread_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_conversation(thread_id: str, request: Request) -> Response:
+    deleted = await chat_service(request).delete_conversation(thread_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.get(
+    "/api/conversations/{thread_id}/messages",
+    response_model=list[ChatMessage],
+    response_model_exclude_none=True,
+)
+async def conversation_messages(
+    thread_id: str, request: Request
+) -> list[ChatMessage]:
+    service = chat_service(request)
+    if await service.get_conversation(thread_id) is None:
+        raise HTTPException(status_code=404, detail="conversation not found")
+    return await service.messages(thread_id)
+
+
+@app.post("/api/chat", response_model=ChatResponse, response_model_exclude_none=True)
+async def chat(payload: ChatRequest, request: Request) -> ChatResponse:
+    service = chat_service(request)
+    try:
+        conversation, message = await service.chat(
+            message=payload.message,
+            model_name=payload.model,
+            thread_id=payload.thread_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return ChatResponse(
+        thread_id=conversation.id,
+        conversation=conversation,
+        message=message,
+    )
 
 
 if __name__ == "__main__":

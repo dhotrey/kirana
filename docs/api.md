@@ -1,0 +1,234 @@
+# API Endpoints
+
+The FastAPI application is served from `app/main.py`. When the local server is running, FastAPI exposes the live OpenAPI schema and Swagger UI:
+
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+- OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
+
+Run the app from `app/`:
+
+```sh
+uv run python main.py
+```
+
+The chat API is a local, single-user prototype API. Conversation history is persisted in `db.sqlite` using LangGraph's SQLite checkpointer keyed by `thread_id`; sidebar metadata is stored in the `conversations` table in the same database.
+
+## `GET /`
+
+Serves the chat UI HTML.
+
+### Response
+
+```http
+200 OK
+content-type: text/html; charset=utf-8
+```
+
+## `GET /api/models`
+
+Returns the model aliases available to the chat UI. The list is loaded from `[kirana].available_models` and `[kirana].model_identifiers` in `app/config.toml`.
+
+### Response
+
+```json
+[
+  {
+    "name": "mistral",
+    "identifier": "mistral/mistral-large-latest"
+  },
+  {
+    "name": "gemini-3.1-flash",
+    "identifier": "google-ai-studio/gemini-3.1-flash-lite-preview"
+  }
+]
+```
+
+## `GET /api/conversations`
+
+Returns the sidebar conversation list ordered by most recently updated first. Soft-deleted conversations are excluded.
+
+### Response
+
+```json
+[
+  {
+    "id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+    "title": "Weekly grocery totals",
+    "created_at": "2026-05-11T02:36:26.783Z",
+    "updated_at": "2026-05-11T02:55:57.602Z"
+  }
+]
+```
+
+## `POST /api/conversations`
+
+Creates an empty conversation and returns its metadata. The `id` is a UUID and is also the LangGraph `thread_id`.
+
+### Request
+
+No request body.
+
+### Response
+
+```json
+{
+  "conversation": {
+    "id": "813fa9f9-bbc1-4c20-b98b-31623f18ee4f",
+    "title": "New conversation",
+    "created_at": "2026-05-11T02:46:35.315Z",
+    "updated_at": "2026-05-11T02:46:35.315Z"
+  }
+}
+```
+
+## `PATCH /api/conversations/{thread_id}`
+
+Renames an active conversation. This updates the `conversations.title` field and refreshes `updated_at`.
+
+### Path Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `thread_id` | string | Conversation UUID and LangGraph thread ID. |
+
+### Request
+
+```json
+{
+  "title": "May grocery follow-ups"
+}
+```
+
+### Response
+
+```json
+{
+  "conversation": {
+    "id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+    "title": "May grocery follow-ups",
+    "created_at": "2026-05-11T02:36:26.783Z",
+    "updated_at": "2026-05-11T02:55:57.602Z"
+  }
+}
+```
+
+### Errors
+
+- `400 Bad Request`: title is empty after trimming whitespace.
+- `404 Not Found`: conversation does not exist.
+
+## `DELETE /api/conversations/{thread_id}`
+
+Soft-deletes a conversation. This sets `conversations.is_active` to `0` and refreshes `updated_at`; the LangGraph checkpointed message history is left intact, but the conversation no longer appears in the sidebar or active conversation APIs.
+
+### Path Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `thread_id` | string | Conversation UUID and LangGraph thread ID. |
+
+### Response
+
+Returns `204 No Content` on success.
+
+### Errors
+
+- `404 Not Found`: conversation does not exist or is already deleted.
+
+## `GET /api/conversations/{thread_id}/messages`
+
+Returns the persisted LangGraph message history for an active conversation.
+
+The persisted message history returns message roles and content. Per-request timing stats are returned by the immediate `/api/chat` response because `total_tat_seconds` measures the full API request turnaround.
+
+### Path Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| `thread_id` | string | Conversation UUID and LangGraph thread ID. |
+
+### Response
+
+```json
+[
+  {
+    "role": "user",
+    "content": "How much did I spend at Woolworths last month?"
+  },
+  {
+    "role": "assistant",
+    "content": "I can answer that once the retrieval tools are wired in."
+  }
+]
+```
+
+### Errors
+
+- `404 Not Found`: conversation does not exist.
+
+## `POST /api/chat`
+
+Sends a user message to the LangGraph chat graph. The graph currently has an agent node and a dedicated tool-calling node with conditional routing, even though no tools are registered yet. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+
+Each model call is prefixed with `prompts/system_prompt.md` plus a runtime date line formatted as `Today's date is YYYY-MM-DD.`. The system message is injected at call time and is not persisted in the conversation transcript returned by `/api/conversations/{thread_id}/messages`.
+
+If `thread_id` is omitted or unknown, the service creates a new conversation and derives the title from the first user message. No in-memory conversation state is used.
+
+### Request
+
+```json
+{
+  "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+  "model": "mistral",
+  "message": "Reply with exactly: pong"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `thread_id` | string or null | No | Existing conversation UUID. |
+| `model` | string | Yes | Model alias from `GET /api/models`. |
+| `message` | string | Yes | User message. Must be non-empty. |
+
+### Response
+
+```json
+{
+  "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+  "conversation": {
+    "id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
+    "title": "Reply with exactly: pong",
+    "created_at": "2026-05-11T02:36:26.783Z",
+    "updated_at": "2026-05-11T02:37:34.207Z"
+  },
+  "message": {
+    "role": "assistant",
+    "content": "pong",
+    "stats": {
+      "total_tat_seconds": 1.347,
+      "input_tokens": 18,
+      "output_tokens": 3,
+      "total_tokens": 21
+    }
+  }
+}
+```
+
+### Errors
+
+- `400 Bad Request`: unknown model alias.
+- `422 Unprocessable Entity`: malformed request body or empty `message`.
+
+## Observability
+
+Chat requests are instrumented with Logfire when `KIRANA_DISABLE_LOGFIRE` is not set to `1`, `true`, or `yes`.
+
+Each chat request emits:
+
+- `chat_request` span with `thread_id`, model alias, model identifier, query text, and query length.
+- `chat query` event with the raw user query.
+- OpenAI-compatible LLM span for the Cloudflare AI Gateway call.
+- `chat response` event with raw response text, response length, total request turnaround time in seconds, input tokens, output tokens, and total tokens.
+
+The same query, response, total request turnaround time, and token metadata is written to the configured chat logfile, currently `[kirana].chat_log_file` in `app/config.toml`.
