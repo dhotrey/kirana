@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kirana Chat</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f4ee;
+        --panel: #fffefa;
+        --line: #ded6c9;
+        --text: #1f2933;
+        --muted: #667085;
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --user: #d9f3ee;
+        --assistant: #ffffff;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        height: 100vh;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--line);
+        background: #ebe4d8;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .sidebar-header {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      button,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .icon-button,
+      .send-button {
+        border: 0;
+        background: var(--accent);
+        color: white;
+        cursor: pointer;
+      }
+
+      .icon-button {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .conversation-list {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      .conversation {
+        width: 100%;
+        border: 1px solid transparent;
+        background: transparent;
+        text-align: left;
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .conversation-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 30px 30px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .conversation:hover,
+      .conversation.active {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: var(--line);
+      }
+
+      .conversation-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 650;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .conversation-action {
+        width: 30px;
+        height: 30px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .conversation-action:hover {
+        border-color: var(--line);
+        background: white;
+        color: var(--text);
+      }
+
+      .delete-conversation:hover {
+        border-color: #fecaca;
+        color: #b91c1c;
+      }
+
+      .title-input {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 5px 7px;
+        font-size: 14px;
+        font-weight: 650;
+        color: var(--text);
+      }
+
+      .conversation-time {
+        display: block;
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .chat {
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        background: var(--panel);
+        overflow: hidden;
+      }
+
+      .chat-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chat-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .messages {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 24px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .empty {
+        margin: auto;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .message {
+        position: relative;
+        max-width: min(760px, 86%);
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        background: var(--user);
+        border-color: #b7ded6;
+      }
+
+      .message.assistant {
+        align-self: flex-start;
+        background: var(--assistant);
+        white-space: normal;
+      }
+
+      .message.assistant p,
+      .message.assistant ul,
+      .message.assistant ol,
+      .message.assistant blockquote,
+      .message.assistant pre {
+        margin: 0 0 10px;
+      }
+
+      .message.assistant > :last-child {
+        margin-bottom: 0;
+      }
+
+      .message.assistant h1,
+      .message.assistant h2,
+      .message.assistant h3 {
+        margin: 0 0 8px;
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .message.assistant ul,
+      .message.assistant ol {
+        padding-left: 20px;
+      }
+
+      .message.assistant li + li {
+        margin-top: 4px;
+      }
+
+      .message.assistant blockquote {
+        border-left: 3px solid var(--line);
+        padding-left: 10px;
+        color: var(--muted);
+      }
+
+      .message.assistant code {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: #f7f4ee;
+        padding: 1px 4px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.92em;
+      }
+
+      .message.assistant pre {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #f7f4ee;
+        padding: 10px;
+        white-space: pre;
+      }
+
+      .message.assistant pre code {
+        border: 0;
+        background: transparent;
+        padding: 0;
+      }
+
+      .message.assistant a {
+        color: var(--accent-strong);
+      }
+
+      .message.has-stats {
+        cursor: help;
+      }
+
+      .message-stats {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        z-index: 2;
+        display: none;
+        width: max-content;
+        max-width: min(320px, 80vw);
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #26231d;
+        color: #fffaf0;
+        font-size: 12px;
+        line-height: 1.35;
+        white-space: normal;
+        box-shadow: 0 10px 24px rgba(38, 35, 29, 0.22);
+      }
+
+      .message.has-stats:hover .message-stats,
+      .message.has-stats:focus .message-stats {
+        display: block;
+      }
+
+      .composer {
+        border-top: 1px solid var(--line);
+        padding: 14px 20px 18px;
+        background: #faf8f2;
+      }
+
+      .composer-row {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      select,
+      textarea {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: var(--text);
+      }
+
+      select {
+        min-height: 44px;
+        padding: 0 10px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 44px;
+        max-height: 160px;
+        resize: vertical;
+        padding: 11px 12px;
+      }
+
+      .send-button {
+        min-height: 44px;
+        padding: 0 18px;
+        border-radius: 8px;
+        font-weight: 700;
+      }
+
+      .send-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+      }
+
+      .status {
+        min-height: 20px;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: 180px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .conversation-list {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+
+        .conversation {
+          min-width: 220px;
+        }
+
+        .composer-row {
+          grid-template-columns: 1fr auto;
+        }
+
+        select {
+          grid-column: 1 / -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h1>Kirana</h1>
+          <button class="icon-button" id="newConversation" title="New conversation">
+            +
+          </button>
+        </div>
+        <div class="conversation-list" id="conversationList"></div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-header">
+          <div class="chat-title" id="chatTitle">New conversation</div>
+        </header>
+        <div class="messages" id="messages">
+          <div class="empty">Ask a grocery finance question.</div>
+        </div>
+        <form class="composer" id="composer">
+          <div class="composer-row">
+            <select id="modelSelect" aria-label="Model"></select>
+            <textarea
+              id="messageInput"
+              placeholder="Type your message..."
+              rows="1"
+              required
+            ></textarea>
+            <button class="send-button" id="sendButton" type="submit">Send</button>
+          </div>
+          <div class="status" id="status"></div>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        threadId: null,
+        conversations: [],
+        sending: false,
+      };
+
+      const els = {
+        conversationList: document.querySelector("#conversationList"),
+        newConversation: document.querySelector("#newConversation"),
+        chatTitle: document.querySelector("#chatTitle"),
+        messages: document.querySelector("#messages"),
+        composer: document.querySelector("#composer"),
+        modelSelect: document.querySelector("#modelSelect"),
+        messageInput: document.querySelector("#messageInput"),
+        sendButton: document.querySelector("#sendButton"),
+        status: document.querySelector("#status"),
+      };
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.detail || `Request failed: ${response.status}`);
+        }
+        if (response.status === 204) {
+          return null;
+        }
+        return response.json();
+      }
+
+      function setStatus(text) {
+        els.status.textContent = text || "";
+      }
+
+      function renderConversations() {
+        els.conversationList.innerHTML = "";
+        for (const conversation of state.conversations) {
+          const item = document.createElement("div");
+          item.className =
+            "conversation" + (conversation.id === state.threadId ? " active" : "");
+          item.role = "button";
+          item.tabIndex = 0;
+          item.dataset.id = conversation.id;
+
+          const row = document.createElement("span");
+          row.className = "conversation-row";
+
+          const title = document.createElement("span");
+          title.className = "conversation-title";
+          title.textContent = conversation.title;
+
+          const edit = document.createElement("button");
+          edit.className = "conversation-action edit-title";
+          edit.type = "button";
+          edit.title = "Rename conversation";
+          edit.textContent = "✎";
+          edit.addEventListener("click", (event) => {
+            event.stopPropagation();
+            startTitleEdit(item, conversation);
+          });
+          edit.addEventListener("keydown", (event) => event.stopPropagation());
+
+          const remove = document.createElement("button");
+          remove.className = "conversation-action delete-conversation";
+          remove.type = "button";
+          remove.title = "Delete conversation";
+          remove.textContent = "×";
+          remove.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deleteConversation(conversation.id);
+          });
+          remove.addEventListener("keydown", (event) => event.stopPropagation());
+
+          row.append(title, edit, remove);
+
+          const time = document.createElement("span");
+          time.className = "conversation-time";
+          time.textContent = new Date(conversation.updated_at).toLocaleString();
+
+          item.append(row, time);
+          item.addEventListener("click", () => selectConversation(conversation.id));
+          item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectConversation(conversation.id);
+            }
+          });
+          els.conversationList.append(item);
+        }
+      }
+
+      function startTitleEdit(item, conversation) {
+        const row = item.querySelector(".conversation-row");
+        const oldTitle = conversation.title;
+        row.innerHTML = "";
+
+        const input = document.createElement("input");
+        input.className = "title-input";
+        input.value = oldTitle;
+        input.maxLength = 120;
+
+        let finished = false;
+        async function finish(save) {
+          if (finished) return;
+          finished = true;
+          const nextTitle = input.value.trim();
+          if (!save || !nextTitle || nextTitle === oldTitle) {
+            renderConversations();
+            return;
+          }
+          try {
+            const { conversation: updated } = await api(
+              `/api/conversations/${conversation.id}`,
+              {
+                method: "PATCH",
+                body: JSON.stringify({ title: nextTitle }),
+              },
+            );
+            state.conversations = state.conversations.map((item) =>
+              item.id === updated.id ? updated : item,
+            );
+            if (state.threadId === updated.id) {
+              els.chatTitle.textContent = updated.title;
+            }
+            renderConversations();
+            setStatus("");
+          } catch (error) {
+            setStatus(error.message);
+            renderConversations();
+          }
+        }
+
+        input.addEventListener("click", (event) => event.stopPropagation());
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            finish(true);
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            finish(false);
+          }
+        });
+        input.addEventListener("blur", () => finish(true));
+
+        row.append(input);
+        input.focus();
+        input.select();
+      }
+
+      function renderEmptyConversation() {
+        state.threadId = null;
+        els.chatTitle.textContent = "New conversation";
+        renderConversations();
+        renderMessages([]);
+      }
+
+      async function deleteConversation(threadId) {
+        const conversation = state.conversations.find((item) => item.id === threadId);
+        if (!conversation) return;
+        const confirmed = window.confirm(`Delete "${conversation.title}" from the sidebar?`);
+        if (!confirmed) return;
+
+        try {
+          await api(`/api/conversations/${threadId}`, { method: "DELETE" });
+          state.conversations = state.conversations.filter(
+            (item) => item.id !== threadId,
+          );
+
+          if (state.threadId === threadId) {
+            const next = state.conversations[0];
+            if (next) {
+              await selectConversation(next.id);
+            } else {
+              renderEmptyConversation();
+            }
+          } else {
+            renderConversations();
+          }
+          setStatus("");
+        } catch (error) {
+          setStatus(error.message);
+        }
+      }
+
+      function renderMessages(messages) {
+        els.messages.innerHTML = "";
+        if (!messages.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "Ask a grocery finance question.";
+          els.messages.append(empty);
+          return;
+        }
+        for (const message of messages) {
+          appendMessage(message);
+        }
+      }
+
+      function formatSeconds(seconds) {
+        if (!Number.isFinite(seconds)) return "0.000";
+        if (seconds >= 10) return seconds.toFixed(1);
+        return seconds.toFixed(3);
+      }
+
+      function formatStats(stats) {
+        return `Replied in ${formatSeconds(stats.total_tat_seconds)}s · Tokens ${stats.total_tokens} (${stats.input_tokens} in / ${stats.output_tokens} out)`;
+      }
+
+      function appendInlineMarkdown(parent, text) {
+        const pattern = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\((https?:\/\/[^)\s]+)\))/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = pattern.exec(text)) !== null) {
+          if (match.index > lastIndex) {
+            parent.append(document.createTextNode(text.slice(lastIndex, match.index)));
+          }
+
+          const token = match[0];
+          if (token.startsWith("`")) {
+            const code = document.createElement("code");
+            code.textContent = token.slice(1, -1);
+            parent.append(code);
+          } else if (token.startsWith("**")) {
+            const strong = document.createElement("strong");
+            appendInlineMarkdown(strong, token.slice(2, -2));
+            parent.append(strong);
+          } else if (token.startsWith("*")) {
+            const emphasis = document.createElement("em");
+            appendInlineMarkdown(emphasis, token.slice(1, -1));
+            parent.append(emphasis);
+          } else if (token.startsWith("[")) {
+            const labelEnd = token.indexOf("](");
+            const href = token.slice(labelEnd + 2, -1);
+            const link = document.createElement("a");
+            link.href = href;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            appendInlineMarkdown(link, token.slice(1, labelEnd));
+            parent.append(link);
+          }
+
+          lastIndex = pattern.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+          parent.append(document.createTextNode(text.slice(lastIndex)));
+        }
+      }
+
+      function appendParagraph(parent, lines) {
+        const paragraph = document.createElement("p");
+        appendInlineMarkdown(paragraph, lines.join(" ").trim());
+        parent.append(paragraph);
+      }
+
+      function renderMarkdown(markdown) {
+        const fragment = document.createDocumentFragment();
+        const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+        let index = 0;
+
+        while (index < lines.length) {
+          const line = lines[index];
+          if (!line.trim()) {
+            index += 1;
+            continue;
+          }
+
+          const fence = line.match(/^```(\w+)?\s*$/);
+          if (fence) {
+            const codeLines = [];
+            index += 1;
+            while (index < lines.length && !lines[index].startsWith("```")) {
+              codeLines.push(lines[index]);
+              index += 1;
+            }
+            if (index < lines.length) index += 1;
+            const pre = document.createElement("pre");
+            const code = document.createElement("code");
+            if (fence[1]) code.dataset.language = fence[1];
+            code.textContent = codeLines.join("\n");
+            pre.append(code);
+            fragment.append(pre);
+            continue;
+          }
+
+          const heading = line.match(/^(#{1,3})\s+(.+)$/);
+          if (heading) {
+            const node = document.createElement(`h${heading[1].length}`);
+            appendInlineMarkdown(node, heading[2].trim());
+            fragment.append(node);
+            index += 1;
+            continue;
+          }
+
+          const unordered = line.match(/^\s*[-*]\s+(.+)$/);
+          if (unordered) {
+            const list = document.createElement("ul");
+            while (index < lines.length) {
+              const item = lines[index].match(/^\s*[-*]\s+(.+)$/);
+              if (!item) break;
+              const li = document.createElement("li");
+              appendInlineMarkdown(li, item[1].trim());
+              list.append(li);
+              index += 1;
+            }
+            fragment.append(list);
+            continue;
+          }
+
+          const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
+          if (ordered) {
+            const list = document.createElement("ol");
+            while (index < lines.length) {
+              const item = lines[index].match(/^\s*\d+\.\s+(.+)$/);
+              if (!item) break;
+              const li = document.createElement("li");
+              appendInlineMarkdown(li, item[1].trim());
+              list.append(li);
+              index += 1;
+            }
+            fragment.append(list);
+            continue;
+          }
+
+          const quote = line.match(/^>\s?(.+)$/);
+          if (quote) {
+            const blockquote = document.createElement("blockquote");
+            const quoteLines = [];
+            while (index < lines.length) {
+              const part = lines[index].match(/^>\s?(.+)$/);
+              if (!part) break;
+              quoteLines.push(part[1]);
+              index += 1;
+            }
+            appendInlineMarkdown(blockquote, quoteLines.join(" "));
+            fragment.append(blockquote);
+            continue;
+          }
+
+          const paragraphLines = [line];
+          index += 1;
+          while (
+            index < lines.length &&
+            lines[index].trim() &&
+            !/^(```|#{1,3}\s+|\s*[-*]\s+|\s*\d+\.\s+|>\s?)/.test(lines[index])
+          ) {
+            paragraphLines.push(lines[index]);
+            index += 1;
+          }
+          appendParagraph(fragment, paragraphLines);
+        }
+
+        return fragment;
+      }
+
+      function appendMessage(messageOrRole, content = "") {
+        const message =
+          typeof messageOrRole === "string"
+            ? { role: messageOrRole, content }
+            : messageOrRole;
+        const node = document.createElement("div");
+        node.className = `message ${message.role}`;
+        if (message.role === "assistant") {
+          node.append(renderMarkdown(message.content));
+        } else {
+          node.textContent = message.content;
+        }
+
+        if (message.role === "assistant" && message.stats) {
+          const stats = formatStats(message.stats);
+          node.classList.add("has-stats");
+          node.tabIndex = 0;
+          node.title = stats;
+
+          const statsNode = document.createElement("span");
+          statsNode.className = "message-stats";
+          statsNode.textContent = stats;
+          node.append(statsNode);
+        }
+
+        els.messages.append(node);
+        els.messages.scrollTop = els.messages.scrollHeight;
+      }
+
+      async function loadModels() {
+        const models = await api("/api/models");
+        els.modelSelect.innerHTML = "";
+        for (const model of models) {
+          const option = document.createElement("option");
+          option.value = model.name;
+          option.textContent = model.name;
+          option.title = model.identifier;
+          els.modelSelect.append(option);
+        }
+      }
+
+      async function loadConversations() {
+        state.conversations = await api("/api/conversations");
+        renderConversations();
+      }
+
+      async function selectConversation(threadId) {
+        state.threadId = threadId;
+        const conversation = state.conversations.find((item) => item.id === threadId);
+        els.chatTitle.textContent = conversation?.title || "Conversation";
+        renderConversations();
+        const messages = await api(`/api/conversations/${threadId}/messages`);
+        renderMessages(messages);
+      }
+
+      async function newConversation() {
+        const { conversation } = await api("/api/conversations", { method: "POST" });
+        await loadConversations();
+        await selectConversation(conversation.id);
+        els.messageInput.focus();
+      }
+
+      async function sendMessage(event) {
+        event.preventDefault();
+        const text = els.messageInput.value.trim();
+        if (!text || state.sending) return;
+
+        state.sending = true;
+        els.sendButton.disabled = true;
+        els.messageInput.value = "";
+        appendMessage("user", text);
+        setStatus("Thinking...");
+
+        try {
+          const response = await api("/api/chat", {
+            method: "POST",
+            body: JSON.stringify({
+              thread_id: state.threadId,
+              model: els.modelSelect.value,
+              message: text,
+            }),
+          });
+          state.threadId = response.thread_id;
+          appendMessage(response.message);
+          await loadConversations();
+          els.chatTitle.textContent = response.conversation.title;
+          renderConversations();
+          setStatus("");
+        } catch (error) {
+          appendMessage("assistant", error.message);
+          setStatus("Request failed.");
+        } finally {
+          state.sending = false;
+          els.sendButton.disabled = false;
+          els.messageInput.focus();
+        }
+      }
+
+      els.newConversation.addEventListener("click", newConversation);
+      els.composer.addEventListener("submit", sendMessage);
+      els.messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          els.composer.requestSubmit();
+        }
+      });
+
+      (async function init() {
+        try {
+          await loadModels();
+          await loadConversations();
+          if (state.conversations.length) {
+            await selectConversation(state.conversations[0].id);
+          }
+        } catch (error) {
+          setStatus(error.message);
+        }
+      })();
+    </script>
+  </body>
+</html>
