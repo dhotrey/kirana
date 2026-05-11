@@ -276,7 +276,7 @@ class ChatService:
                 )
 
             if model_routes_via_gemini(model_identifier):
-                self.rate_limiter.wait(logger)
+                await self.rate_limiter.wait_async(logger)
 
             async for chunk, metadata in self.graph.astream(
                 {"messages": [HumanMessage(content=message)]},
