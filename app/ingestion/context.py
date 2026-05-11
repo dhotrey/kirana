@@ -14,6 +14,7 @@ from pydantic import SecretStr
 
 from ingestion.embeddings import Embedder
 from ingestion.rate_limit import GeminiRateLimiter
+from chat.gateway import cloudflare_gateway_base_url, cloudflare_gateway_headers
 from utils.config import load_config
 from utils.types import Config
 
@@ -56,36 +57,11 @@ class IngestionContext:
         return replace(self, dry_run=dry_run)
 
 
-def _model_routes_via_gemini(model_name: str) -> bool:
-    m = model_name.lower()
-    return "gemini" in m or "google-ai-studio" in m
-
-
-def _gateway_byok_alias(model_name: str) -> str | None:
-    """BYOK provider alias for Cloudflare AI Gateway (cf-aig-byok-alias header)."""
-    if _model_routes_via_gemini(model_name):
-        return "gemini"
-    if "mistral" in model_name.lower():
-        return "mistral"
-    return None
-
-
 def _build_agent(model_name: str, cfg: Config) -> Agent:
-    account_id = os.environ["CLOUDFLARE_ACCOUNT_ID"]
-    gateway_token = os.environ["CLOUDFLARE_AI_GATEWAY_API_TOKEN"]
-    base_url = (
-        "https://gateway.ai.cloudflare.com/v1/"
-        f"{account_id}/{cfg.cloudflare.ai_gateway_name}/compat"
-    )
-    _gw_headers: dict[str, str] = {
-        "cf-aig-authorization": f"Bearer {gateway_token}",
-    }
-    if _alias := _gateway_byok_alias(model_name):
-        _gw_headers["cf-aig-byok-alias"] = _alias
     client = AsyncOpenAI(
         api_key="",
-        base_url=base_url,
-        default_headers=_gw_headers,
+        base_url=cloudflare_gateway_base_url(cfg),
+        default_headers=cloudflare_gateway_headers(model_name),
     )
 
     provider = OpenAIProvider(openai_client=client)

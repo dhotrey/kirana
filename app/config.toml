@@ -1,5 +1,9 @@
 [kirana]
 log_level = "DEBUG" # INFO, DEBUG, WARNING, ERROR, CRITICAL
+available_models = ["mistral", "gemini-3.1-flash"]
+model_identifiers = { mistral = "mistral/mistral-large-latest", "gemini-3.1-flash" = "google-ai-studio/gemini-3.1-flash-lite-preview"}
+chat_db_path = "db.sqlite"
+chat_log_file = "logs/chat.log"
 
 [knowledge_base]
 splitwise_csv_path = "../knowledge-base/splitwise/splitwise-export-26-04-2026.csv"

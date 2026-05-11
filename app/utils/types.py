@@ -4,6 +4,22 @@ from typing import Literal
 
 class KiranaConfig(pydantic.BaseModel):
     log_level: str  # INFO, DEBUG, WARNING, ERROR, CRITICAL
+    available_models: list[str] = pydantic.Field(default_factory=list)
+    model_identifiers: dict[str, str] = pydantic.Field(default_factory=dict)
+    chat_db_path: str = "db.sqlite"
+    chat_log_file: str = "logs/chat.log"
+
+    @pydantic.model_validator(mode="after")
+    def validate_model_aliases(self) -> "KiranaConfig":
+        missing = [
+            model for model in self.available_models if model not in self.model_identifiers
+        ]
+        if missing:
+            raise ValueError(
+                "available_models missing model_identifiers entries: "
+                + ", ".join(missing)
+            )
+        return self
 
 
 class CloudflareConfig(pydantic.BaseModel):

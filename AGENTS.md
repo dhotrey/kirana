@@ -19,6 +19,7 @@
 
 - Prefer small, typed Python modules over putting substantial logic in `main.py`.
 - Use Pydantic models for structured data crossing module boundaries: receipt JSON, Splitwise rows, tool inputs/outputs, evaluation cases, and trace payloads.
+- When adding, removing, or changing API endpoints, update the API documentation in `docs/` in the same change. Keep the documented Swagger/OpenAPI path, request bodies, response shapes, and error cases aligned with `main.py`.
 - Keep deterministic retrieval and accounting logic outside LLM prompts where possible. Use parameterized SQL/templates for predictable factual and reconciliation queries.
 - Limit schema-grounded LLM SQL generation to analytical/multi-hop query paths, and validate it as read-only before execution.
 - When adding agent/tool routing, make routing decisions explicit and observable rather than hidden in synthesis prompts.
@@ -41,4 +42,3 @@
 - Run the narrowest relevant check available. For the current backend skeleton, use `cd backend && uv run python main.py`.
 - If tests or linters are introduced later, document and run them with `uv run ...` from `backend/`.
 - Keep README claims, environment flags, and evaluation conditions aligned with code changes.
-
