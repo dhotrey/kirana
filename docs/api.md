@@ -169,11 +169,15 @@ The persisted message history returns message roles and content. Per-request tim
 
 ## `POST /api/chat/stream`
 
-Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph currently has an agent node and a dedicated tool-calling node with conditional routing, even though no tools are registered yet. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph has an agent node and a dedicated tool-calling node with conditional routing. The registered `query_finance_db` tool runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database tables `receipts`, `receipt_items`, and `splits`; currency conversion should happen in SQL with expressions such as `ROUND(SUM(total_cents) / 100.0, 2)`. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+
+Gemini routes execute requested tools inside the agent node and then synthesize from plain-text tool results. This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata.
 
 Each model call is prefixed with `prompts/system_prompt.md` plus a runtime date line formatted as `Today's date is YYYY-MM-DD.`. The system message is injected at call time and is not persisted in the conversation transcript returned by `/api/conversations/{thread_id}/messages`.
 
 If `thread_id` is omitted or unknown, the service creates a new conversation and derives the title from the first user message. No in-memory conversation state is used.
+
+Finance database tool calls use a shared `D1Database` client created during application startup from `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID`. If these are unavailable, the chat stream still starts, but the assistant receives a tool error and should report that structured finance lookup is unavailable. Tool calls and D1 queries are logged with Loguru and, when Logfire is enabled, recorded as spans with query text, row counts, and latency metadata.
 
 ### Request
 
@@ -199,7 +203,7 @@ Event types:
 
 - `start`: emitted once before any token deltas. Contains `thread_id` and the resolved `conversation` object (created on the fly if `thread_id` was omitted or unknown).
 - `delta`: emitted repeatedly as token chunks arrive from the model. Contains the incremental `content` string for the assistant message.
-- `end`: emitted once after the model finishes. Contains `thread_id`, the refreshed `conversation`, and the full assistant `message` (including `stats` with `total_tat_seconds`, `input_tokens`, `output_tokens`, and `total_tokens`).
+- `end`: emitted once after the model finishes. Contains `thread_id`, the refreshed `conversation`, and the full assistant `message` (including `stats` with `total_tat_seconds`, `input_tokens`, `output_tokens`, `total_tokens`, `tool_calls`, and `tools`).
 - `error`: emitted if the request fails (e.g. unknown model). Contains a `detail` string.
 
 Example stream:
@@ -211,7 +215,7 @@ data: {"type":"delta","content":"po"}
 
 data: {"type":"delta","content":"ng"}
 
-data: {"type":"end","thread_id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","conversation":{"id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","title":"Reply with exactly: pong","created_at":"2026-05-11T02:36:26.783Z","updated_at":"2026-05-11T02:37:34.207Z"},"message":{"role":"assistant","content":"pong","stats":{"total_tat_seconds":1.347,"input_tokens":18,"output_tokens":3,"total_tokens":21}}}
+data: {"type":"end","thread_id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","conversation":{"id":"1f15484d-d3a5-4571-8485-e0b43668a2f7","title":"Reply with exactly: pong","created_at":"2026-05-11T02:36:26.783Z","updated_at":"2026-05-11T02:37:34.207Z"},"message":{"role":"assistant","content":"pong","stats":{"total_tat_seconds":1.347,"input_tokens":18,"output_tokens":3,"total_tokens":21,"tool_calls":0,"tools":[]}}}
 ```
 
 ### Errors

@@ -20,6 +20,8 @@ class ChatMessageStats(BaseModel):
     input_tokens: int
     output_tokens: int
     total_tokens: int
+    tool_calls: int = 0
+    tools: list[str] = Field(default_factory=list)
 
 
 class ChatMessage(BaseModel):

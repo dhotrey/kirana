@@ -27,6 +27,8 @@ from chat.schemas import (
 from chat.service import ChatService, chat_service_lifespan
 from ingestion.observability import configure_logfire, configure_logging
 from utils.config import load_config
+from utils.db.d1 import D1Database
+from utils.observability import logfire_enabled
 
 load_dotenv()
 
@@ -41,11 +43,13 @@ async def lifespan(app: FastAPI):
     Path(cfg.kirana.chat_log_file).parent.mkdir(parents=True, exist_ok=True)
     logger.add(cfg.kirana.chat_log_file, level=cfg.log_level, rotation="5 MB")
     configure_logfire()
-    if os.environ.get("KIRANA_DISABLE_LOGFIRE", "").lower() not in ("1", "true", "yes"):
+    if logfire_enabled():
         logfire.instrument_fastapi(app)
         logfire.instrument_openai()
 
-    async with chat_service_lifespan(cfg) as service:
+    d1 = D1Database.from_env(cfg)
+    app.state.d1 = d1
+    async with chat_service_lifespan(cfg, d1) as service:
         app.state.chat_service = service
         logger.info("chat service ready")
         yield

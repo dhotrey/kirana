@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sqlite3
 import time
 import uuid
@@ -18,6 +17,7 @@ from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
     SystemMessage,
+    ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -29,11 +29,12 @@ from chat.gateway import build_chat_model, model_routes_via_gemini
 from chat.schemas import ChatMessage, ChatMessageStats, Conversation
 from ingestion.prompts import load_prompt
 from ingestion.rate_limit import GeminiRateLimiter
+from tools import build_finance_tools
+from utils.db.d1 import D1Database
+from utils.observability import logfire_enabled
 from utils.types import Config
 
-
 TITLE_MAX_CHARS = 48
-LOGFIRE_DISABLED_VALUES = ("1", "true", "yes")
 SYSTEM_PROMPT_NAME = "system_prompt"
 
 
@@ -51,7 +52,10 @@ def _title_from_message(message: str) -> str:
 
 
 def _message_to_schema(
-    message: BaseMessage, *, total_tat_seconds: float | None = None
+    message: BaseMessage,
+    *,
+    total_tat_seconds: float | None = None,
+    tool_names: list[str] | None = None,
 ) -> ChatMessage | None:
     if isinstance(message, HumanMessage):
         role = "user"
@@ -69,19 +73,16 @@ def _message_to_schema(
     if isinstance(message, AIMessage):
         token_usage = _extract_token_usage(message)
         if total_tat_seconds is not None:
+            tools = tool_names or []
             stats = ChatMessageStats(
                 total_tat_seconds=round(total_tat_seconds, 3),
                 input_tokens=token_usage["input_tokens"],
                 output_tokens=token_usage["output_tokens"],
                 total_tokens=token_usage["total_tokens"],
+                tool_calls=len(tools),
+                tools=tools,
             )
     return ChatMessage(role=role, content=text, stats=stats)
-
-
-def _logfire_enabled() -> bool:
-    return os.environ.get("KIRANA_DISABLE_LOGFIRE", "").lower() not in (
-        LOGFIRE_DISABLED_VALUES
-    )
 
 
 def _extract_token_usage(message: AIMessage) -> dict[str, int]:
@@ -104,14 +105,65 @@ def _extract_token_usage(message: AIMessage) -> dict[str, int]:
     total_tokens = (
         usage.get("total_tokens")
         or token_usage.get("total_tokens")
-        or int(input_tokens)
-        + int(output_tokens)
+        or int(input_tokens) + int(output_tokens)
     )
     return {
         "input_tokens": int(input_tokens),
         "output_tokens": int(output_tokens),
         "total_tokens": int(total_tokens),
     }
+
+
+def _extract_tool_names_for_latest_turn(messages: Sequence[BaseMessage]) -> list[str]:
+    latest_human_index = None
+    for index, message in enumerate(messages):
+        if isinstance(message, HumanMessage):
+            latest_human_index = index
+    if latest_human_index is None:
+        return []
+
+    tool_names: list[str] = []
+    pending_ai_tool_names: list[str] = []
+    for message in messages[latest_human_index + 1 :]:
+        if isinstance(message, AIMessage):
+            recorded_tool_names = getattr(message, "additional_kwargs", {}).get(
+                "kirana_tool_names", []
+            )
+            if isinstance(recorded_tool_names, list):
+                tool_names.extend(
+                    name for name in recorded_tool_names if isinstance(name, str)
+                )
+
+        if isinstance(message, ToolMessage):
+            name = getattr(message, "name", None)
+            if isinstance(name, str) and name:
+                tool_names.append(name)
+            elif pending_ai_tool_names:
+                tool_names.append(pending_ai_tool_names.pop(0))
+            else:
+                tool_names.append("unknown_tool")
+            continue
+
+        if not isinstance(message, AIMessage):
+            continue
+
+        for tool_call in getattr(message, "tool_calls", []) or []:
+            if isinstance(tool_call, dict):
+                name = tool_call.get("name")
+                if isinstance(name, str) and name:
+                    pending_ai_tool_names.append(name)
+
+        raw_tool_calls = getattr(message, "additional_kwargs", {}).get("tool_calls", [])
+        for raw_tool_call in raw_tool_calls or []:
+            if not isinstance(raw_tool_call, dict):
+                continue
+            function = raw_tool_call.get("function")
+            if isinstance(function, dict):
+                name = function.get("name")
+                if isinstance(name, str) and name:
+                    pending_ai_tool_names.append(name)
+
+    return tool_names
 
 
 class ChatService:
@@ -121,13 +173,16 @@ class ChatService:
         cfg: Config,
         conn: aiosqlite.Connection,
         checkpointer: AsyncSqliteSaver,
+        d1: D1Database,
     ) -> None:
         self.cfg = cfg
         self.conn = conn
         self.checkpointer = checkpointer
+        self.d1 = d1
         self.rate_limiter = GeminiRateLimiter(cfg.ingestion.gemini_min_interval_seconds)
         self._models: dict[str, Any] = {}
-        self._tools: list[Any] = []
+        self._tools: list[Any] = build_finance_tools(d1)
+        self._tool_by_name = {tool.name: tool for tool in self._tools}
         self.graph = self._build_graph()
 
     async def setup(self) -> None:
@@ -152,7 +207,9 @@ class ChatService:
             for name in self.cfg.kirana.available_models
         ]
 
-    async def create_conversation(self, title: str = "New conversation") -> Conversation:
+    async def create_conversation(
+        self, title: str = "New conversation"
+    ) -> Conversation:
         thread_id = str(uuid.uuid4())
         await self.conn.execute(
             f"""
@@ -247,7 +304,7 @@ class ChatService:
         }
 
         span = nullcontext()
-        if _logfire_enabled():
+        if logfire_enabled():
             span = logfire.span(
                 "chat_request",
                 thread_id=conversation.id,
@@ -266,7 +323,7 @@ class ChatService:
                 len(message),
                 message,
             )
-            if _logfire_enabled():
+            if logfire_enabled():
                 logfire.info(
                     "chat query",
                     thread_id=conversation.id,
@@ -311,17 +368,22 @@ class ChatService:
                 None,
             )
             if response_message is None:
-                raise RuntimeError("model response did not include an assistant message")
+                raise RuntimeError(
+                    "model response did not include an assistant message"
+                )
 
             total_tat_seconds = time.perf_counter() - started_at
+            tool_names = _extract_tool_names_for_latest_turn(raw_messages)
             response = _message_to_schema(
-                response_message, total_tat_seconds=total_tat_seconds
+                response_message,
+                total_tat_seconds=total_tat_seconds,
+                tool_names=tool_names,
             )
             if response is None:
                 raise RuntimeError("model response could not be serialized")
 
             token_usage = _extract_token_usage(response_message)
-            if _logfire_enabled():
+            if logfire_enabled():
                 attributes = {
                     "response": response.content,
                     "response_chars": len(response.content),
@@ -329,6 +391,8 @@ class ChatService:
                     "output_tokens": token_usage["output_tokens"],
                     "total_tokens": token_usage["total_tokens"],
                     "total_tat_seconds": total_tat_seconds,
+                    "tool_calls": len(tool_names),
+                    "tools": tool_names,
                 }
                 if chat_span is not None:
                     chat_span.set_attributes(attributes)
@@ -343,6 +407,8 @@ class ChatService:
                     output_tokens=token_usage["output_tokens"],
                     total_tokens=token_usage["total_tokens"],
                     total_tat_seconds=total_tat_seconds,
+                    tool_calls=len(tool_names),
+                    tools=tool_names,
                     streaming=True,
                 )
 
@@ -351,7 +417,7 @@ class ChatService:
         if updated is None:
             raise RuntimeError("conversation disappeared during chat request")
         logger.info(
-            "chat stream response thread={} model={} chars={} total_tat_seconds={:.3f} input_tokens={} output_tokens={} total_tokens={} response={!r}",
+            "chat stream response thread={} model={} chars={} total_tat_seconds={:.3f} input_tokens={} output_tokens={} total_tokens={} tool_calls={} response={!r}",
             conversation.id,
             model_name,
             len(response.content),
@@ -359,6 +425,7 @@ class ChatService:
             token_usage["input_tokens"],
             token_usage["output_tokens"],
             token_usage["total_tokens"],
+            response.stats.tool_calls if response.stats is not None else 0,
             response.content,
         )
         yield {
@@ -373,7 +440,9 @@ class ChatService:
         graph.add_node("agent", self._agent_node)
         graph.add_node("tools", ToolNode(self._tools))
         graph.add_edge(START, "agent")
-        graph.add_conditional_edges("agent", tools_condition, {"tools": "tools", END: END})
+        graph.add_conditional_edges(
+            "agent", tools_condition, {"tools": "tools", END: END}
+        )
         graph.add_edge("tools", "agent")
         return graph.compile(checkpointer=self.checkpointer)
 
@@ -384,6 +453,10 @@ class ChatService:
         model_name = configurable.get("model_name")
         if not isinstance(model_name, str):
             model_name = self.cfg.kirana.available_models[0]
+        model_identifier = self.cfg.kirana.model_identifiers[model_name]
+        if model_routes_via_gemini(model_identifier) and self._tools:
+            return {"messages": [await self._gemini_agent_response(model_name, state)]}
+
         model = self._model(model_name)
         if self._tools:
             model = model.bind_tools(self._tools)
@@ -391,6 +464,49 @@ class ChatService:
             [SystemMessage(content=self._system_prompt()), *state["messages"]]
         )
         return {"messages": [response]}
+
+    async def _gemini_agent_response(
+        self, model_name: str, state: MessagesState
+    ) -> AIMessage:
+        base_messages = [SystemMessage(content=self._system_prompt()), *state["messages"]]
+        model = self._model(model_name)
+        tool_request = await model.bind_tools(self._tools).ainvoke(base_messages)
+        tool_calls = getattr(tool_request, "tool_calls", []) or []
+        if not tool_calls:
+            return tool_request
+
+        tool_names: list[str] = []
+        tool_result_lines: list[str] = []
+        for tool_call in tool_calls:
+            if not isinstance(tool_call, dict):
+                continue
+            name = tool_call.get("name")
+            args = tool_call.get("args") or {}
+            if not isinstance(name, str) or name not in self._tool_by_name:
+                continue
+            if not isinstance(args, dict):
+                args = {"input": args}
+            result = await self._tool_by_name[name].ainvoke(args)
+            tool_names.append(name)
+            tool_result_lines.append(f"{name}({args}) -> {result}")
+
+        if not tool_result_lines:
+            return tool_request
+
+        synthesis_prompt = HumanMessage(
+            content=(
+                "Use these tool results to answer the user's latest question. "
+                "Do not call another tool. Keep the answer concise and cite the "
+                "date range or SQL-derived basis when relevant.\n\n"
+                + "\n".join(tool_result_lines)
+            )
+        )
+        final_response = await model.ainvoke([*base_messages, synthesis_prompt])
+        final_response.additional_kwargs = {
+            **getattr(final_response, "additional_kwargs", {}),
+            "kirana_tool_names": tool_names,
+        }
+        return final_response
 
     def _system_prompt(self) -> str:
         prompt = load_prompt(self.cfg.ingestion.prompts_dir, SYSTEM_PROMPT_NAME).strip()
@@ -456,12 +572,17 @@ class ChatService:
 
 
 @asynccontextmanager
-async def chat_service_lifespan(cfg: Config):
+async def chat_service_lifespan(cfg: Config, d1: D1Database):
     db_path = Path(cfg.kirana.chat_db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     async with aiosqlite.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
         checkpointer = AsyncSqliteSaver(conn)
-        service = ChatService(cfg=cfg, conn=conn, checkpointer=checkpointer)
+        service = ChatService(
+            cfg=cfg,
+            conn=conn,
+            checkpointer=checkpointer,
+            d1=d1,
+        )
         await service.setup()
         yield service
