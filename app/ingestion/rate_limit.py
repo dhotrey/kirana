@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class BoundLogger(Protocol):
-    def debug(self, message: str) -> None: ...
+    def debug(self, message: str, /, *args: Any, **kwargs: Any) -> None: ...
 
 
 class GeminiRateLimiter:

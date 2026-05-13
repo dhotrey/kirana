@@ -40,7 +40,7 @@ def cloudflare_gateway_headers(model_identifier: str) -> dict[str, str]:
 def build_chat_model(model_identifier: str, cfg: Config) -> ChatOpenAI:
     return ChatOpenAI(
         model=model_identifier,
-        api_key="",
+        api_key="",  # type: ignore[arg-type]
         base_url=cloudflare_gateway_base_url(cfg),
         default_headers=cloudflare_gateway_headers(model_identifier),
         temperature=0,

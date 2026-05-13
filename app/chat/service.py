@@ -179,13 +179,15 @@ class ChatService:
         return [self._conversation_from_row(row) for row in rows]
 
     async def get_conversation(self, thread_id: str) -> Conversation | None:
-        rows = await self.conn.execute_fetchall(
-            """
-            SELECT id, title, created_at, updated_at
-            FROM conversations
-            WHERE id = ? AND is_active = 1
-            """,
-            (thread_id,),
+        rows = list(
+            await self.conn.execute_fetchall(
+                """
+                SELECT id, title, created_at, updated_at
+                FROM conversations
+                WHERE id = ? AND is_active = 1
+                """,
+                (thread_id,),
+            )
         )
         if not rows:
             return None
