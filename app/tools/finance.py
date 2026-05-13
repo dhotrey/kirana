@@ -30,10 +30,27 @@ FORBIDDEN_SQL_PATTERNS = re.compile(
     r")\b",
     re.IGNORECASE,
 )
-TABLE_REFERENCE_PATTERN = re.compile(
-    r"\b(?:from|join)\s+([a-zA-Z_][a-zA-Z0-9_]*)\b",
+SQL_TOKEN_PATTERN = re.compile(
+    r"'(?:''|[^'])*'"
+    r'|"(?:\"\"|[^"])*"'
+    r"|`(?:``|[^`])*`"
+    r"|\[[^\]]+\]"
+    r"|[a-zA-Z_][a-zA-Z0-9_]*"
+    r"|[(),;.]",
     re.IGNORECASE,
 )
+CLAUSE_TERMINATORS = {
+    "where",
+    "group",
+    "order",
+    "having",
+    "limit",
+    "offset",
+    "union",
+    "except",
+    "intersect",
+    "window",
+}
 
 
 class FinanceSQLInput(BaseModel):
@@ -44,6 +61,52 @@ class FinanceSQLInput(BaseModel):
             "and alias computed fields clearly."
         )
     )
+
+
+def _identifier_from_token(token: str) -> str | None:
+    if re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", token):
+        return token.lower()
+    if token.startswith('"') and token.endswith('"'):
+        return token[1:-1].replace('""', '"').lower()
+    if token.startswith("`") and token.endswith("`"):
+        return token[1:-1].replace("``", "`").lower()
+    if token.startswith("[") and token.endswith("]"):
+        return token[1:-1].lower()
+    return None
+
+
+def _referenced_finance_tables(sql: str) -> set[str]:
+    tokens = SQL_TOKEN_PATTERN.findall(sql)
+    referenced_tables: set[str] = set()
+    in_from_clause = False
+    expecting_table = False
+
+    for token in tokens:
+        lower = token.lower()
+        if lower in ("from", "join"):
+            in_from_clause = True
+            expecting_table = True
+            continue
+
+        if expecting_table:
+            if token == "(":
+                expecting_table = False
+                continue
+            table_name = _identifier_from_token(token)
+            if table_name is not None:
+                referenced_tables.add(table_name)
+                expecting_table = False
+            continue
+
+        if not in_from_clause:
+            continue
+
+        if lower in CLAUSE_TERMINATORS:
+            in_from_clause = False
+        elif token == ",":
+            expecting_table = True
+
+    return referenced_tables
 
 
 def validate_finance_sql(sql: str) -> str:
@@ -61,9 +124,7 @@ def validate_finance_sql(sql: str) -> str:
     if FORBIDDEN_SQL_PATTERNS.search(normalized):
         raise ValueError("Only read-only SELECT queries are allowed")
 
-    referenced_tables = {
-        match.group(1).lower() for match in TABLE_REFERENCE_PATTERN.finditer(normalized)
-    }
+    referenced_tables = _referenced_finance_tables(normalized)
     if not referenced_tables:
         raise ValueError("Query must reference at least one finance table")
     unknown_tables = referenced_tables - ALLOWED_FINANCE_TABLES

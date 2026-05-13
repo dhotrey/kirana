@@ -51,6 +51,8 @@ def test_validate_finance_sql_allows_splitwise_share_views():
         "DELETE FROM receipts",
         "SELECT * FROM receipts; DROP TABLE splits",
         "SELECT * FROM users",
+        "SELECT receipts.id FROM receipts, users WHERE users.id = receipts.id",
+        'SELECT receipts.id FROM receipts, "users" WHERE "users".id = receipts.id',
         "PRAGMA table_info(receipts)",
         "SELECT * FROM receipts -- bypass",
     ],
