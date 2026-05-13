@@ -169,7 +169,7 @@ The persisted message history returns message roles and content. Per-request tim
 
 ## `POST /api/chat/stream`
 
-Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph has an agent node and a dedicated tool-calling node with conditional routing. The registered `query_finance_db` tool runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database tables `receipts`, `receipt_items`, and `splits`; currency conversion should happen in SQL with expressions such as `ROUND(SUM(total_cents) / 100.0, 2)`. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph has an agent node and a dedicated tool-calling node with conditional routing. The registered `query_finance_db` tool runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database tables/views `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`; currency conversion should happen in SQL with expressions such as `ROUND(SUM(total_cents) / 100.0, 2)`. The model call is routed through Cloudflare AI Gateway using the selected model alias.
 
 Gemini routes execute requested tools inside the agent node and then synthesize from plain-text tool results. This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata.
 

@@ -13,7 +13,14 @@ from pydantic import BaseModel, Field
 from utils.db.d1 import D1Database
 from utils.observability import logfire_enabled
 
-ALLOWED_FINANCE_TABLES = {"receipts", "receipt_items", "splits"}
+ALLOWED_FINANCE_TABLES = {
+    "receipts",
+    "receipt_items",
+    "splits",
+    "me_expenses",
+    "roommate1_expenses",
+    "roommate2_expenses",
+}
 MAX_RESULT_ROWS = 100
 
 FORBIDDEN_SQL_PATTERNS = re.compile(
@@ -80,9 +87,10 @@ def build_finance_tools(db: D1Database) -> list[BaseTool]:
         args_schema=FinanceSQLInput,
         description=(
             "Run a validated read-only SQLite SELECT query against the household "
-            "finance database. Available tables are receipts, receipt_items, and "
-            "splits. Amounts are stored as integer cents; convert result amounts "
-            "to dollars in SQL using ROUND(cents_column / 100.0, 2)."
+            "finance database. Available tables/views are receipts, receipt_items, "
+            "splits, me_expenses, roommate1_expenses, and roommate2_expenses. "
+            "Amounts are stored as integer cents; convert result amounts to dollars "
+            "in SQL using ROUND(cents_column / 100.0, 2)."
         ),
     )
     def query_finance_db(sql: str) -> str:

@@ -44,6 +44,35 @@ CREATE TABLE IF NOT EXISTS receipt_items (
 );
 """
 
+splitwise_expense_views_sql = """
+CREATE VIEW IF NOT EXISTS me_expenses AS
+SELECT
+    *,
+    CASE
+        WHEN me_cents > 0 THEN cost_cents - me_cents
+        ELSE -me_cents
+    END AS my_share_cents
+FROM splits;
+
+CREATE VIEW IF NOT EXISTS roommate1_expenses AS
+SELECT
+    *,
+    CASE
+        WHEN roommate1_cents > 0 THEN cost_cents - roommate1_cents
+        ELSE -roommate1_cents
+    END AS roommate1_share_cents
+FROM splits;
+
+CREATE VIEW IF NOT EXISTS roommate2_expenses AS
+SELECT
+    *,
+    CASE
+        WHEN roommate2_cents > 0 THEN cost_cents - roommate2_cents
+        ELSE -roommate2_cents
+    END AS roommate2_share_cents
+FROM splits;
+"""
+
 create_indexes_sql = """
 CREATE INDEX IF NOT EXISTS idx_receipts_date
 ON receipts(date);

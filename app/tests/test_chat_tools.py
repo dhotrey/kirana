@@ -31,6 +31,20 @@ def test_validate_finance_sql_allows_receipt_month_sum():
     assert "total_dollars" in sql
 
 
+def test_validate_finance_sql_allows_splitwise_share_views():
+    sql = validate_finance_sql(
+        """
+        SELECT
+            SUM(my_share_cents) AS total_cents,
+            ROUND(SUM(my_share_cents) / 100.0, 2) AS total_dollars
+        FROM me_expenses
+        WHERE date >= '2026-03-01' AND date < '2026-04-01'
+        """
+    )
+
+    assert "me_expenses" in sql
+
+
 @pytest.mark.parametrize(
     "sql",
     [

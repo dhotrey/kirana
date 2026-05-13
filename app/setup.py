@@ -6,6 +6,7 @@ from utils.db.db_setup import (
     splitwise_create_table_sql,
     receipts_create_table_sql,
     reciept_items_create_table_sql,
+    splitwise_expense_views_sql,
     create_indexes_sql,
 )
 from utils.types import Config as Cfg
@@ -67,6 +68,7 @@ def setup_d1(cf_client, cloudflare_account_id_secret: SecretStr, infra_config: C
         splitwise_create_table_sql,
         receipts_create_table_sql,
         reciept_items_create_table_sql,
+        splitwise_expense_views_sql,
         create_indexes_sql,
     ]
     for statement in db_setup_statements:
