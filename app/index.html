@@ -228,6 +228,7 @@
       .message.assistant ul,
       .message.assistant ol,
       .message.assistant blockquote,
+      .message.assistant .table-wrap,
       .message.assistant pre {
         margin: 0 0 10px;
       }
@@ -285,6 +286,38 @@
 
       .message.assistant a {
         color: var(--accent-strong);
+      }
+
+      .message.assistant .table-wrap {
+        max-width: 100%;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .message.assistant table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 360px;
+        font-size: 13px;
+        white-space: normal;
+      }
+
+      .message.assistant th,
+      .message.assistant td {
+        padding: 7px 9px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .message.assistant th {
+        background: #f7f4ee;
+        font-weight: 700;
+      }
+
+      .message.assistant tr:last-child td {
+        border-bottom: 0;
       }
 
       .message.assistant.streaming::after {
@@ -702,6 +735,13 @@
         );
 
         node.append(timing, tokens, toolStats);
+        const retryCount = Number(stats.rate_limit_retries || 0);
+        if (retryCount > 0) {
+          const retries = document.createElement("span");
+          retries.textContent = `· Retries ${retryCount}`;
+          retries.title = "LLM rate-limit auto retries";
+          node.append(retries);
+        }
         return node;
       }
 
@@ -753,6 +793,67 @@
         parent.append(paragraph);
       }
 
+      function isTableRow(line) {
+        const trimmed = line.trim();
+        return trimmed.includes("|") && /^\|?.+\|.+\|?$/.test(trimmed);
+      }
+
+      function isTableSeparator(line) {
+        const cells = splitTableRow(line);
+        return (
+          cells.length > 1 &&
+          cells.every((cell) => /^:?-{3,}:?$/.test(cell.trim()))
+        );
+      }
+
+      function splitTableRow(line) {
+        let trimmed = line.trim();
+        if (trimmed.startsWith("|")) trimmed = trimmed.slice(1);
+        if (trimmed.endsWith("|")) trimmed = trimmed.slice(0, -1);
+        return trimmed.split("|").map((cell) => cell.trim());
+      }
+
+      function appendMarkdownTable(parent, headerLine, separatorLine, bodyLines) {
+        const headers = splitTableRow(headerLine);
+        const alignments = splitTableRow(separatorLine).map((cell) => {
+          const trimmed = cell.trim();
+          if (trimmed.startsWith(":") && trimmed.endsWith(":")) return "center";
+          if (trimmed.endsWith(":")) return "right";
+          return "left";
+        });
+
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        headers.forEach((header, cellIndex) => {
+          const th = document.createElement("th");
+          th.style.textAlign = alignments[cellIndex] || "left";
+          appendInlineMarkdown(th, header);
+          headerRow.append(th);
+        });
+        thead.append(headerRow);
+        table.append(thead);
+
+        const tbody = document.createElement("tbody");
+        for (const line of bodyLines) {
+          const cells = splitTableRow(line);
+          const row = document.createElement("tr");
+          headers.forEach((_, cellIndex) => {
+            const td = document.createElement("td");
+            td.style.textAlign = alignments[cellIndex] || "left";
+            appendInlineMarkdown(td, cells[cellIndex] || "");
+            row.append(td);
+          });
+          tbody.append(row);
+        }
+        table.append(tbody);
+
+        const wrap = document.createElement("div");
+        wrap.className = "table-wrap";
+        wrap.append(table);
+        parent.append(wrap);
+      }
+
       function renderMarkdown(markdown) {
         const fragment = document.createDocumentFragment();
         const lines = markdown.replace(/\r\n/g, "\n").split("\n");
@@ -762,6 +863,21 @@
           const line = lines[index];
           if (!line.trim()) {
             index += 1;
+            continue;
+          }
+
+          if (
+            index + 1 < lines.length &&
+            isTableRow(line) &&
+            isTableSeparator(lines[index + 1])
+          ) {
+            const bodyLines = [];
+            index += 2;
+            while (index < lines.length && isTableRow(lines[index])) {
+              bodyLines.push(lines[index]);
+              index += 1;
+            }
+            appendMarkdownTable(fragment, line, lines[index - bodyLines.length - 1], bodyLines);
             continue;
           }
 
@@ -842,7 +958,12 @@
           while (
             index < lines.length &&
             lines[index].trim() &&
-            !/^(```|#{1,3}\s+|\s*[-*]\s+|\s*\d+\.\s+|>\s?)/.test(lines[index])
+            !/^(```|#{1,3}\s+|\s*[-*]\s+|\s*\d+\.\s+|>\s?)/.test(lines[index]) &&
+            !(
+              index + 1 < lines.length &&
+              isTableRow(lines[index]) &&
+              isTableSeparator(lines[index + 1])
+            )
           ) {
             paragraphLines.push(lines[index]);
             index += 1;
@@ -1016,6 +1137,13 @@
               } else if (event.type === "delta") {
                 receivedDelta = true;
                 streamingMessage.append(event.content);
+              } else if (event.type === "rate_limit_retry") {
+                const seconds = Number(event.delay_seconds || 0);
+                const retry = Number(event.retry_attempt || event.retry_count || 0);
+                const maxRetries = Number(event.max_retries || 0);
+                setStatus(
+                  `Rate limited. Auto retrying in ${seconds}s (${retry}/${maxRetries})...`,
+                );
               } else if (event.type === "end") {
                 finalConversation = event.conversation;
                 finalMessage = event.message;
