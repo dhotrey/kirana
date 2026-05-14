@@ -1,26 +1,20 @@
 # Kirana
 
+Kirana is a local grocery finance QA prototype for answering questions over household receipts, receipt line items, Splitwise exports, and query-time item images.
 
-## Introduction & Motivation
-Personal grocery spending is fragmented across three structurally distinct layers: unstructured receipts encoding what was bought, structured expense splits encoding who paid what, and real-world visual context encoding what is currently in the pantry. Users naturally ask questions that span precise financial aggregation, fuzzy semantic recall, and cross-modal grounding — query types that expose a fundamental mismatch between LLM strengths (semantic understanding, vision parsing) and LLM weaknesses (exact arithmetic, cross-source reconciliation).
-
-This project frames a systems research question: does deterministic, tool-mediated retrieval neutralise the performance gap between model tiers for personal finance QA? We hypothesize that externalising reasoning into structured tool orchestration — SQL for aggregation, semantic RAG for fuzzy retrieval, and cross-modal vector search for visual grounding — makes retrieval strategy the primary driver of answer quality, not raw model scale.
-
-A second, technically distinctive claim motivates the retrieval design: using a single multimodal embedding model (Qwen3-VL-Embedding-2B) to embed both OCR-derived receipt summaries and user-provided pantry photos into a shared vector space makes cross-modal retrieval semantically meaningful — a query about current pantry contents can retrieve historically relevant receipts without requiring a modality boundary in the index. We test whether this unified embedding space provides retrieval signal beyond a text-only index.
+The current app is a FastAPI chat UI backed by a LangGraph agent. The agent calls a small set of tools for finance lookup and semantic retrieval, routes model calls through Cloudflare AI Gateway, stores chat threads in local SQLite, reads finance data from Cloudflare D1, and searches receipt/item embeddings in Cloudflare Vectorize. Receipt ingestion converts grocery receipt images into validated JSON, stores receipt and item rows in D1, uploads raw artifacts to Tigris, creates receipt summaries, and embeds those summaries for semantic search.
 
 Against a plain-LLM baseline (no tools, receipts injected as context), the ablation isolates how much of the performance delta is attributable to the harness itself versus model scale.
 
 ## Goals
 
-- Answer grocery finance questions accurately across four query families (factual, cross-modal, analytical/multi-hop, conversational follow-up), with a plain-LLM baseline as the lower bound.
-
-- Support hybrid retrieval over two persistent modalities (receipt text + validated JSON; Splitwise CSV) and one query-time modality (pantry/item images), with all three embedded into a shared vector space via Qwen3-VL-Embedding-2B.
-
-- Implement and evaluate a single, strong ablation: a 2×2 factorial over retrieval strategy × model tier, plus a plain-LLM baseline — testing whether the harness closes the performance gap between models.
-
-- Capture full query traces via Pydantic Logfire (token burn, tool calls, routing decisions, latency as a sum of parts — e.g. embedding accounts for 2s, retrieval 5s, synthesis 3s) with zero persistent local telemetry overhead. An example of token burn metrics is one I saw in codex - Token usage: total=66,085 input=60,466 (+ 3,66,592 cached) output=5,619 (reasoning 1,313) 
-
-- Expose inline query stats in the UI (latency, tokens, tool hops, model) with full traces available in Logfire.
+- Answer household grocery spending questions using receipt totals from the structured finance database.
+- Answer personal contribution questions using Splitwise-derived views, especially `me_expenses.my_share_cents`.
+- Support semantic grocery-trip recall, such as finding "fresh veggies" trips, by searching embedded receipt summaries and then grounding answers in receipt rows and line items.
+- Support uploaded item-image questions by embedding the uploaded image, searching a Vectorize index built from distinct receipt item names, and confirming candidate matches against receipt line items in D1.
+- Support conversational follow-ups in a thread, including drilling from a monthly total into receipt lists, date grouping, store breakdowns, item counts, and personal contribution for a selected date.
+- Capture useful trace data through Logfire and local logs, including chat requests, model calls, retries, tool calls, D1 query timing, Vectorize retrieval timing, image embedding stages, token counts, and end-to-end turnaround time.
+- Expose inline response stats in the chat stream, including latency, token counts, tool count, tool names, and rate-limit retries.
 
 ## Non-Goals
 
@@ -31,83 +25,154 @@ Against a plain-LLM baseline (no tools, receipts injected as context), the ablat
 - Persistent local telemetry processes (Prometheus, Grafana, local OTel collectors)
 - A polished production UI
 
+## Architecture
+
+### Chat App
+
+- `app/main.py` serves the FastAPI app and static chat UI from `app/index.html`.
+- `app/chat/service.py` owns the LangGraph chat graph, conversation persistence, streaming SSE responses, image-upload handling, rate-limit retries, and Logfire spans.
+- Chat history is stored locally in `db.sqlite` through LangGraph's SQLite checkpointer. Conversation metadata is stored in a local `conversations` table.
+- Models are configured in `app/config.toml` and called through Cloudflare AI Gateway via `app/chat/gateway.py`.
+- The active tools are registered in the graph from `app/tools/finance.py` and `app/tools/vectorize.py`.
+
+```mermaid
+flowchart TD
+    User["User chat turn<br/>/api/chat/stream or /api/chat/image/stream"] --> Prep["ChatService.chat_stream<br/>validate model, ensure conversation,<br/>emit start event"]
+    Prep --> ImageCheck{"Image uploaded?"}
+    ImageCheck -- "No" --> Human["HumanMessage<br/>normalized text"]
+    ImageCheck -- "Yes" --> ImageEmbed["Embed uploaded image<br/>Qwen3-VL-Embedding-2B<br/>cache embedding_key"]
+    ImageEmbed --> ImagePrompt["HumanMessage with image context<br/>embedding_key + threshold + tool instructions"]
+    Human --> Agent["LangGraph agent node<br/>system prompt + thread messages<br/>model via Cloudflare AI Gateway"]
+    ImagePrompt --> Agent
+
+    Agent --> ToolDecision{"tools_condition<br/>tool calls requested?"}
+    ToolDecision -- "No" --> Final["Assistant response"]
+    ToolDecision -- "Yes" --> ToolNode["LangGraph ToolNode"]
+
+    ToolNode --> FinanceTool["query_finance_db<br/>validated read-only SELECT"]
+    ToolNode --> ItemSearch["search_item_vectors<br/>item-name Vectorize search"]
+
+    FinanceTool --> D1[("Cloudflare D1<br/>receipts, receipt_items,<br/>splits, expense views")]
+    ItemSearch --> ItemIndex[("Vectorize<br/>receipt item names")]
+    D1 --> ToolNode
+    ItemIndex --> ToolNode
+
+    ToolNode --> Agent
+    Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
+```
+
+### Implemented Tools
+
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
+- `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
+- `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
+
+### Finance Store
+
+Cloudflare D1 stores the structured finance data:
+
+- `receipts`: one row per grocery receipt, including store, date, item count, subtotal, GST, discounts, total cents, and uploaded image URL.
+- `receipt_items`: OCR-derived line items joined to `receipts.id`, including item name, quantity, unit price, total price, and inferred category.
+- `splits`: imported Splitwise CSV rows with total cost and per-person amounts.
+- `me_expenses`, `roommate1_expenses`, `roommate2_expenses`: views over `splits` that expose adjusted personal share columns.
+
 ## Knowledge Base & Modalities
 
-### Modality 1 — Receipt Images (Persistent)
-Raw grocery receipt photographs. At ingestion, a hosted vision model extracts and structures text into validated JSON (store, date, address, line items with inferred category, subtotal, GST, discounts, total). A natural-language summary of the shop's semantic character is generated and embedded alongside the receipt image into Qwen3-VL-Embedding-2B's shared vector space. This unified embedding enables retrieval from both text queries and image queries against the same index — the key technical claim of the retrieval design.
+### Receipt Images and OCR JSON
 
-### Modality 2 — Splitwise Structured Export (Persistent)
-CSV mapping each shared grocery shop to per-person payment amounts, dates, and descriptions. Stored in a relational database. Provides the financial attribution dimension (personal vs. household share) that receipt images cannot answer alone. Cross-source reconciliation between receipts and Splitwise entries — matched on date proximity and total amount — is the primary multi-hop retrieval pattern.
+Receipt images are loaded from `knowledge-base/receipts/images` during ingestion. `app/ingest_receipts.py` runs the ingestion pipeline:
 
-### Modality 3 — Pantry/Item Images (Query-Time)
-Photos of the user's current pantry, fridge, or cupboard, provided at query time. Embedded via Qwen3-VL-Embedding-2B into the same vector space as receipt summaries. Enables semantic retrieval of historically relevant receipts based on visual pantry context, without requiring a separate image→text transcription step before retrieval.
+- Gemini extracts a structured receipt object from the image.
+- Pydantic validates store, date, subtotal, GST, discounts, item totals, item names, quantities, and inferred categories.
+- Mistral creates a natural-language receipt summary.
+- D1 receives the receipt row and receipt item rows.
+- The receipt summary is embedded with `Qwen/Qwen3-VL-Embedding-2B` and upserted into the receipt-summary Vectorize index.
+- Tigris stores source artifacts and generated outputs for the ingested receipt.
 
+### Splitwise Export
 
-## Ablation Study
+The Splitwise CSV path is configured in `app/config.toml` under `[knowledge_base].splitwise_csv_path`. `app/ingest_kb.py` imports the export into the `splits` table after converting money fields to integer cents. Splitwise data provides personal contribution and roommate share information that receipt OCR cannot infer.
 
-Single axis, 2×2 factorial design with a plain-LLM baseline:
+### Query-Time Item Images
 
-| Condition | Retrieval Strategy | Model | Purpose |
-|---|---|---|---|
-| C0 | None (plain LLM) | Strong (Gemini Flash) | Lower bound; establishes what tool-free reasoning achieves with a strong model |
-| C1 | SQL-only | Weak (Gemma 4B) | Single-mode, weak model |
-| C2 | SQL-only | Strong (Gemini Flash) | Single-mode, strong model; isolates model effect without hybrid retrieval |
-| C3 | Hybrid (SQL + RAG + cross-modal) | Weak (Gemma 4B) | Full harness, weak model |
-| C4 | Hybrid (SQL + RAG + cross-modal) | Strong (Gemini Flash) | Full harness, strong model; expected ceiling |
+`POST /api/chat/image/stream` accepts an uploaded image and optional question. The backend resizes and embeds the image, stores the vector behind a short `embedding_key`, and injects that key into the chat turn. The agent then searches the item-name Vectorize index with `search_item_vectors` and confirms purchase evidence by querying `receipt_items` joined to `receipts`.
 
-- **Primary claim (H1):** C3 ≈ C4 on task success rate and groundedness — hybrid retrieval closes the model-tier gap. The performance delta (C2 − C1) should be larger than (C4 − C3).
-- **Secondary claim (H2):** C3 > C2 — hybrid retrieval with a weak model outperforms SQL-only retrieval with a strong model — demonstrating retrieval strategy dominates model scale.
-- **Baseline comparison (spec requirement):** C4 >> C0 — the full agent substantially outperforms plain-LLM prompting, establishing the harness's contribution.
+The assistant does not directly inspect the uploaded image pixels during the chat turn. It answers from item-vector matches and SQL-grounded receipt evidence.
 
-All conditions selectable via environment variables with no code changes.
+### Vector Indexes
+
+- `kirana-reciept-summaries`: receipt summary embeddings with indexed metadata for `receipt_id`, `store_name`, and `date`.
+- `kirana-receipt-items`: distinct receipt item-name embeddings with indexed `item_name` metadata.
 
 ## Query Families
 
-| Family | Example | Expected Path | Capability Tested |
-|---|---|---|---|
-| QF-1: Factual | "How much did I spend at Woolworths last week?" | Router → SQL (parameterised template) → Synthesis | Date filtering, aggregation, single-source lookup |
-| QF-2: Cross-Modal | "What was my personal share of the big Coles shop on Mar 12?" | Router → SQL (parameterised receipt JOIN splits template, date/amount slot-filled) → Synthesis | Cross-source reconciliation, fuzzy matching, financial attribution |
-| QF-3: Analytical / Multi-Hop | "Over 3 months, am I spending more on fresh or packaged food, and how does that track against my share?" | Router → RAG (semantic filter on receipt summaries) → SQL (schema-grounded LLM generation on matched IDs) → Synthesis → Optional chart | Multi-tool chaining, semantic → structured bridge, LLM SQL generation for variable aggregation logic |
-| QF-4: Conversational Follow-Up | T1: "Show March spend." T2: "What about February?" | Router → State-aware retrieval → Synthesis (resolves references against session history) | Within-session memory, reference resolution, context pruning |
+| Family | Query Shape | Implemented Capability |
+|---|---|---|
+| QF1: Household aggregation | Single-turn date-window totals. | Date-filtered receipt aggregation over `receipts.total_cents`. |
+| QF2: Uploaded image purchase recall | Query-time item image matched against historical purchases. | Image embedding, item-vector search, and SQL confirmation against historical receipt line items. |
+| QF3: Date and semantic trip analysis | Date-specific receipt totals, semantic trip discovery, and item inspection within identified trips. | Combination of D1 lookup, receipt-summary vector search, receipt ID narrowing, and line-item inspection. |
+| QF4: Conversational drill-down | Multi-turn refinement from totals into receipts, grouped dates, stores, item counts, and personal share. | Threaded follow-up over prior context, structured receipt breakdowns, and Splitwise personal-share lookup. |
 
-Minimum corpus: 36 receipts, 12+ labelled test cases (≥3 per family). Ground truth answers hand-verified against source data before any eval runs, with fixed numerical tolerance (see OQ-5).
+## Example Queries
 
-## SQL Generation Design
+### QF1
 
-The agent uses two distinct SQL strategies depending on query shape, keeping the ablation's confounds isolated.
+- How much did my household spend on groceries in the month of April?
 
-**Parameterised templates (QF-1, QF-2):** Query shapes for factual and cross-modal retrieval are fully predictable at design time — date range filters on the receipts table, receipt-to-splits joins matched on date proximity and total amount, single-store aggregations. These are enumerated as parameterised templates; the LLM selects a template and fills slots (date ranges, store names, receipt IDs extracted from prior retrieval steps). The SQL itself is deterministic and never LLM-generated, which keeps QF-1 and QF-2 results clean for ablation comparison.
+### QF2
 
-**Schema-grounded LLM SQL generation (QF-3 only):** Analytical multi-hop queries involve aggregation logic that varies too much to template — grouping by inferred item category, multi-month window construction, joining aggregated receipt data against splits. For these, the agent passes the full table schema to a strongly-routed model and generates SQL directly. This step is instrumented as a separate Logfire span (`sql_generation`) so failures are isolatable from retrieval and synthesis failures. If SQL generation produces a malformed or unsafe query, the span logs the error and the agent falls back to returning partial results with an explanation rather than silently failing.
+- Upload an item image and ask: have we ever bought this or something similar to this in our grocery trips before?
 
-The template path is the default. Schema-grounded generation is an explicitly routed exception, not a fallback.
+### QF3
+
+- How much did I spend on 18th April? Can you list the receipts and the total amount spent?
+- What were all the fresh veggies shopping trips in March?
+- Can you tell me what I got at Woolworths in these identified trips?
+
+### QF4
+
+- How much did my household spend on groceries in the month of March?
+- Can you list the different receipts involved in this as a list?
+- Can you group them by date, list each date's total spend, and tell me which stores were involved on that day and how many items were in each store?
+- Can you tell me what my contribution was for the groceries purchased on 18th March?
+
+## Ablation Study
+
+TODO: define the systems research question and ablation design once the evaluation harness and comparison conditions are settled.
 
 ## Metrics
 
-### Quality (per test case)
+### Quality
 
-- **Task Success Rate** (binary). Numerical answers accept ±5% or ±$3 tolerance.
-- **Groundedness Score** (1–5, LLM-as-judge). Evaluates source citation, hallucination absence, and correct personal vs. household attribution.
-- **Retrieval Recall@k.** Whether correct receipt IDs appear in top-k before SQL filtering; measures retrieval quality independently of synthesis.
-- **Tool Call Accuracy.** Proportion of queries where the router selected the correct tool sequence for the query family.
+- **Task Success Rate**: binary success per test case. Numerical answers accept +/- 5% or +/- $3, whichever is larger.
+- **Groundedness Score**: evaluates whether the answer cites or explains the right source basis, avoids hallucinated receipts/items, and distinguishes household totals from personal shares.
+- **Retrieval Recall@k**: whether the correct receipt IDs or item names appear in top-k before SQL grounding.
+- **Tool Call Accuracy**: whether the agent selected the right tools for the query family.
 
-### Efficiency (auto-captured via Logfire spans)
+### Efficiency
 
-- End-to-end latency (ms) and latency broken down by stage (embedding, retrieval, SQL generation where applicable, synthesis)
-- Token burn (prompt + completion, broken down by model)
-- Tool call count per query
-- Retrieval precision: proportion of injected receipt IDs that were relevant to the ground-truth answer (connects retrieval quality to synthesis quality)
+- End-to-end latency and stage latency where instrumented, including image embedding, Vectorize search, D1 queries, and synthesis.
+- Token burn, including prompt, completion, and total tokens when reported by the model provider.
+- Tool call count per query.
+- Retrieval precision: proportion of retrieved receipt IDs or item candidates that were relevant to the final grounded answer.
 
-## Open Questions
+## Running Locally
 
-- **OQ-1 — Fuzzy join tolerance:** How should receipts match Splitwise entries? (±2 days + ±5% amount?) What does the agent do when a single Splitwise entry spans multiple receipts? Rule-based first; flag ambiguous matches for LLM mediation only when confidence is below threshold.
+Use Python 3.13+ and run commands from `app/`:
 
-- **OQ-2 — Pantry vision reliability:** VLM item extraction will miss occluded or ambiguous items. Should the agent always surface a confirmation step ("I detected: milk, eggs, pasta — correct?") or only when item count is below a minimum? Confirmation step adds a round-trip; skipping it reduces QF trust. Decide before evaluation to avoid post-hoc design changes.
+```sh
+uv sync
+uv run python main.py
+```
 
-- **OQ-3 — Context baseline fairness:** Is injecting all 36 receipts into a 128k context window a realistic plain-LLM baseline (C0), or should we sample a rolling window? Rolling window better simulates practical limits but introduces selection bias. Fix this before running C0 to avoid a strawman comparison.
+Useful ingestion and indexing commands:
 
-- **OQ-4 — Cross-modal retrieval signal:** Does embedding receipt images and pantry photos in the same Qwen3-VL-Embedding-2B space produce meaningful cross-modal similarity, or does the model conflate visual food content with packaging/brand noise? Retrieval Recall@k on QF-2/QF-3 answers this empirically.
+```sh
+uv run python setup.py
+uv run python ingest_kb.py
+uv run python ingest_receipts.py
+uv run python load_item_vectors.py
+```
 
-- **OQ-5 — Numerical tolerance:** What counts as "correct" for financial aggregation? This must be fixed before any evaluation run to prevent post-hoc grading bias. Proposed: ±$3 or ±5%, whichever is larger, with boundary cases documented.
-
-- **OQ-6 — LLM SQL generation safety:** For QF-3, what constraints bound LLM-generated SQL? Read-only queries only (no INSERT/UPDATE/DELETE); queries must reference only the known schema tables; malformed output falls back gracefully. Should a query validator run before execution, or is schema-prompting sufficient?
+The app expects Cloudflare, Tigris, model gateway, and Logfire-related environment variables to be supplied through the local environment or `.env`. Raw receipts, exports, local databases, embeddings, and generated artifacts should stay out of git.
