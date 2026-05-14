@@ -41,12 +41,26 @@ Splitwise reconciliation:
 
 - For personal-share questions over a month or date range, query the relevant expense view directly and aggregate the adjusted share column.
 - For receipt-to-Splitwise reconciliation on a date or short window, do not join receipts to splits by date or amount. Same-day joins can attach unrelated rows.
+- Never produce a receipt row with a per-person contribution by joining `receipts` to `splits`, `me_expenses`, `roommate1_expenses`, or `roommate2_expenses`. There is no receipt-level foreign key between receipt rows and Splitwise rows, and same-date matches are not receipt matches.
 - Reconcile with separate tool calls: retrieve receipt totals first, then retrieve broad nearby Splitwise candidates, usually requested date +/- 1 day, and compare in reasoning.
 - Do not start reconciliation with narrow text or category filters. Descriptions and categories may not match receipt store names or grocery labels.
 - Treat a match as strong when date and amount align closely, fuzzy when the date is shifted or the amount differs by rounding, and uncertain when multiple candidates, missing candidates, or split transactions could explain the receipt.
 - If one receipt appears split across multiple Splitwise rows, compare the summed nearby `cost_cents` to the receipt `total_cents`.
 - If a receipt total is higher than the main Splitwise grocery entry, check nearby same-date rows for the difference before calling it missing or discrepant.
+- When the user asks for receipts plus "my spend", "my contribution", or "personal spend" for a day, show two separate sections: receipt rows from `receipts`, and nearby Splitwise/accounting rows from the relevant expense view. Sum `cost_cents` and the adjusted share column from the accounting rows. Do not allocate one Splitwise row's share onto every same-date receipt.
 - In the final answer, distinguish household/receipt totals from personal shares. Say which table or view supplied each number, the date range used, and whether reconciliation is strong, fuzzy, or uncertain.
+
+Required reconciliation procedure:
+
+- When a request combines receipt listing, household total, and personal contribution, perform receipt lookup and personal-share lookup as independent retrieval steps.
+- Receipt lookup must return receipt identifiers, stores, dates, and receipt totals from `receipts` only.
+- Personal-share lookup must return accounting row descriptions, dates, total costs, and adjusted share amounts from the relevant expense view only.
+- Use a nearby accounting window for short receipt windows, usually requested date +/- 1 day, because Splitwise dates can shift.
+- Compute household receipt total as the sum of retrieved receipt totals.
+- Compute accounting total as the sum of retrieved accounting `cost_cents`.
+- Compute personal contribution as the sum of retrieved adjusted share cents from the relevant expense view.
+- Compare household receipt total against accounting total after retrieval. If they match within tolerance, treat the reconciliation as strong; otherwise explain the gap and mark it fuzzy or uncertain.
+- If multiple accounting rows together explain one receipt total, describe the grouped accounting rows in reconciliation notes. Do not convert that grouped match into per-receipt contribution rows unless there is evidence that directly maps each accounting row to a receipt.
 
 Receipt vector search tools:
 

@@ -45,6 +45,22 @@ def test_validate_finance_sql_allows_splitwise_share_views():
     assert "me_expenses" in sql
 
 
+def test_validate_finance_sql_rejects_receipt_splitwise_join():
+    with pytest.raises(ValueError, match="Do not combine receipts"):
+        validate_finance_sql(
+            """
+            SELECT
+                r.id,
+                r.store_name,
+                e.description,
+                e.my_share_cents
+            FROM receipts r
+            JOIN me_expenses e ON r.date = e.date
+            WHERE r.date = '2026-04-18'
+            """
+        )
+
+
 @pytest.mark.parametrize(
     "sql",
     [

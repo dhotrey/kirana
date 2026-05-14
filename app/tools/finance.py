@@ -21,6 +21,12 @@ ALLOWED_FINANCE_TABLES = {
     "roommate1_expenses",
     "roommate2_expenses",
 }
+SPLITWISE_ACCOUNTING_TABLES = {
+    "splits",
+    "me_expenses",
+    "roommate1_expenses",
+    "roommate2_expenses",
+}
 MAX_RESULT_ROWS = 100
 
 FORBIDDEN_SQL_PATTERNS = re.compile(
@@ -71,6 +77,12 @@ def validate_finance_sql(sql: str) -> str:
         raise ValueError(
             "Query can only reference these tables: "
             + ", ".join(sorted(ALLOWED_FINANCE_TABLES))
+        )
+    if "receipts" in referenced_tables and referenced_tables & SPLITWISE_ACCOUNTING_TABLES:
+        raise ValueError(
+            "Do not combine receipts with Splitwise/accounting tables in one SQL "
+            "query. Query receipt totals and Splitwise/accounting rows separately, "
+            "then reconcile the results."
         )
     return normalized
 

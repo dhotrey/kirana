@@ -1726,5 +1726,271 @@
         }
       }
     ]
+  },
+  "QF-3": {
+    "test_cases_passed": 2,
+    "test_cases_total": 2,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf3_001_april_18_receipts_and_contribution",
+        "prompt": "How much did i spend on 18th April , can you list the receipts and the total amount spent",
+        "expectation": "Receipts on 18th April 2026\nHousehold grocery spend (from receipts table):\n\nReceipt ID Store Date Items Total ($)\n25 THE FRUIT TEMPLE 2026-04-18 5 18.84\n20 Woolworths 2026-04-18 12 75.64\nTotal household spend for 18th April: $94.48\n\nPersonal Contribution (Splitwise/accounting)\nFrom me_expenses table (17th-18th April, accounting window):\n\nDescription Date Total ($) My Share ($)\nWooliez 2026-04-18 65.34 21.78\nVeg 2026-04-18 18.84 6.28\nMints + tonic water 2026-04-18 5.30 0.00\nTim tam 2026-04-18 5.00 0.00\nAccounting total for nearby entries: $94.48\nMy total contribution: $28.06\n\nReconciliation Notes\nThe household receipt total ($94.48) matches the sum of nearby Splitwise entries ($65.34 + $18.84 + $5.30 + $5.00 = $94.48) exactly.\nThe Woolworths receipt ($75.64) is split into two accounting rows: Wooliez ($65.34), Tim tam ($5.00), and Mints + tonic water ($5.30). The remaining $0.32 gap is within tolerance.\nThe THE FRUIT TEMPLE receipt ($18.84) matches the Veg accounting row ($18.84) exactly.\nReconciliation: Strong. All receipts are accounted for in Splitwise, and my share is $28.06.",
+        "actual": "### Receipts on 18th April 2026\n**Household grocery spend** (from `receipts` table):\n\n| Store            | Items | Total ($) |\n|------------------|-------|-----------|\n| THE FRUIT TEMPLE | 5     | 18.84     |\n| Woolworths       | 12    | 75.64     |\n| **Total**        | **17**| **94.48** |\n\n---\n\n### Personal Contribution (Splitwise/accounting)\n**From `me_expenses` view** (17\u201319 April 2026 window):\n\n| Description  | Date       | Cost ($) | My Share ($) |\n|--------------|------------|----------|--------------|\n| Veg          | 2026-04-18 | 18.84    | 6.28         |\n| Wooliez      | 2026-04-18 | 65.34    | 21.78        |\n| **Subtotal** |            | **84.18**| **28.06**    |\n\n**Notes on reconciliation**:\n- The two receipts ($18.84 + $75.64 = **$94.48**) align closely with the two accounting rows for 18th April ($18.84 + $65.34 = **$84.18**). The $10.30 gap is likely due to un-split items (e.g., \"Mints + tonic water\", \"Tim tam\") or rounding.\n- **Your personal spend for 18th April groceries is $28.06**. This excludes non-grocery or fully roommate-covered items.",
+        "passed": true,
+        "judge": {
+          "passed": true,
+          "judge_decision": "YES",
+          "judge_raw_response": "YES",
+          "judge_model": "mistral/mistral-large-latest",
+          "judge_telemetry": {
+            "latency_seconds": 1.169,
+            "input_tokens": 1080,
+            "output_tokens": 2,
+            "total_tokens": 1082
+          }
+        },
+        "error": null,
+        "agent_response": {
+          "thread_id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+          "conversation": {
+            "id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+            "title": "How much did i spend on 18th April , can you li...",
+            "created_at": "2026-05-14T23:15:34.398Z",
+            "updated_at": "2026-05-14T23:15:38.208Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How much did i spend on 18th April , can you list the receipts and the total amount spent",
+              "thread_id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+              "conversation": {
+                "id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+                "title": "How much did i spend on 18th April , can you li...",
+                "created_at": "2026-05-14T23:15:34.398Z",
+                "updated_at": "2026-05-14T23:15:38.208Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "### Receipts on 18th April 2026\n**Household grocery spend** (from `receipts` table):\n\n| Store            | Items | Total ($) |\n|------------------|-------|-----------|\n| THE FRUIT TEMPLE | 5     | 18.84     |\n| Woolworths       | 12    | 75.64     |\n| **Total**        | **17**| **94.48** |\n\n---\n\n### Personal Contribution (Splitwise/accounting)\n**From `me_expenses` view** (17\u201319 April 2026 window):\n\n| Description  | Date       | Cost ($) | My Share ($) |\n|--------------|------------|----------|--------------|\n| Veg          | 2026-04-18 | 18.84    | 6.28         |\n| Wooliez      | 2026-04-18 | 65.34    | 21.78        |\n| **Subtotal** |            | **84.18**| **28.06**    |\n\n**Notes on reconciliation**:\n- The two receipts ($18.84 + $75.64 = **$94.48**) align closely with the two accounting rows for 18th April ($18.84 + $65.34 = **$84.18**). The $10.30 gap is likely due to un-split items (e.g., \"Mints + tonic water\", \"Tim tam\") or rounding.\n- **Your personal spend for 18th April groceries is $28.06**. This excludes non-grocery or fully roommate-covered items.",
+                "stats": {
+                  "total_tat_seconds": 3.807,
+                  "input_tokens": 4179,
+                  "output_tokens": 399,
+                  "total_tokens": 4578,
+                  "tool_calls": 3,
+                  "tools": [
+                    "query_finance_db",
+                    "query_finance_db",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+                "conversation": {
+                  "id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+                  "title": "How much did i spend on 18th April , can you li...",
+                  "created_at": "2026-05-14T23:15:34.398Z",
+                  "updated_at": "2026-05-14T23:15:34.398Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+                "conversation": {
+                  "id": "9cebc1fc-7cc0-4ebe-853f-f8216b6e27b2",
+                  "title": "How much did i spend on 18th April , can you li...",
+                  "created_at": "2026-05-14T23:15:34.398Z",
+                  "updated_at": "2026-05-14T23:15:38.208Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "### Receipts on 18th April 2026\n**Household grocery spend** (from `receipts` table):\n\n| Store            | Items | Total ($) |\n|------------------|-------|-----------|\n| THE FRUIT TEMPLE | 5     | 18.84     |\n| Woolworths       | 12    | 75.64     |\n| **Total**        | **17**| **94.48** |\n\n---\n\n### Personal Contribution (Splitwise/accounting)\n**From `me_expenses` view** (17\u201319 April 2026 window):\n\n| Description  | Date       | Cost ($) | My Share ($) |\n|--------------|------------|----------|--------------|\n| Veg          | 2026-04-18 | 18.84    | 6.28         |\n| Wooliez      | 2026-04-18 | 65.34    | 21.78        |\n| **Subtotal** |            | **84.18**| **28.06**    |\n\n**Notes on reconciliation**:\n- The two receipts ($18.84 + $75.64 = **$94.48**) align closely with the two accounting rows for 18th April ($18.84 + $65.34 = **$84.18**). The $10.30 gap is likely due to un-split items (e.g., \"Mints + tonic water\", \"Tim tam\") or rounding.\n- **Your personal spend for 18th April groceries is $28.06**. This excludes non-grocery or fully roommate-covered items.",
+                  "stats": {
+                    "total_tat_seconds": 3.807,
+                    "input_tokens": 4179,
+                    "output_tokens": 399,
+                    "total_tokens": 4578,
+                    "tool_calls": 3,
+                    "tools": [
+                      "query_finance_db",
+                      "query_finance_db",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "### Receipts on 18th April 2026\n**Household grocery spend** (from `receipts` table):\n\n| Store            | Items | Total ($) |\n|------------------|-------|-----------|\n| THE FRUIT TEMPLE | 5     | 18.84     |\n| Woolworths       | 12    | 75.64     |\n| **Total**        | **17**| **94.48** |\n\n---\n\n### Personal Contribution (Splitwise/accounting)\n**From `me_expenses` view** (17\u201319 April 2026 window):\n\n| Description  | Date       | Cost ($) | My Share ($) |\n|--------------|------------|----------|--------------|\n| Veg          | 2026-04-18 | 18.84    | 6.28         |\n| Wooliez      | 2026-04-18 | 65.34    | 21.78        |\n| **Subtotal** |            | **84.18**| **28.06**    |\n\n**Notes on reconciliation**:\n- The two receipts ($18.84 + $75.64 = **$94.48**) align closely with the two accounting rows for 18th April ($18.84 + $65.34 = **$84.18**). The $10.30 gap is likely due to un-split items (e.g., \"Mints + tonic water\", \"Tim tam\") or rounding.\n- **Your personal spend for 18th April groceries is $28.06**. This excludes non-grocery or fully roommate-covered items.",
+          "latest_message": {
+            "role": "assistant",
+            "content": "### Receipts on 18th April 2026\n**Household grocery spend** (from `receipts` table):\n\n| Store            | Items | Total ($) |\n|------------------|-------|-----------|\n| THE FRUIT TEMPLE | 5     | 18.84     |\n| Woolworths       | 12    | 75.64     |\n| **Total**        | **17**| **94.48** |\n\n---\n\n### Personal Contribution (Splitwise/accounting)\n**From `me_expenses` view** (17\u201319 April 2026 window):\n\n| Description  | Date       | Cost ($) | My Share ($) |\n|--------------|------------|----------|--------------|\n| Veg          | 2026-04-18 | 18.84    | 6.28         |\n| Wooliez      | 2026-04-18 | 65.34    | 21.78        |\n| **Subtotal** |            | **84.18**| **28.06**    |\n\n**Notes on reconciliation**:\n- The two receipts ($18.84 + $75.64 = **$94.48**) align closely with the two accounting rows for 18th April ($18.84 + $65.34 = **$84.18**). The $10.30 gap is likely due to un-split items (e.g., \"Mints + tonic water\", \"Tim tam\") or rounding.\n- **Your personal spend for 18th April groceries is $28.06**. This excludes non-grocery or fully roommate-covered items.",
+            "stats": {
+              "total_tat_seconds": 3.807,
+              "input_tokens": 4179,
+              "output_tokens": 399,
+              "total_tokens": 4578,
+              "tool_calls": 3,
+              "tools": [
+                "query_finance_db",
+                "query_finance_db",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 3.807,
+            "input_tokens": 4179,
+            "output_tokens": 399,
+            "total_tokens": 4578,
+            "tool_calls": 3,
+            "tools_called": [
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf3_002_march_fresh_veggies_trips",
+        "prompt": "What were all the fresh veggies shopping trips in March",
+        "expectation": "Here are the fresh vegetables shopping trips in March 2026, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\nDate Store Items Total (AUD)\n2026-03-18 Woolworths 17 $85.36\n2026-03-18 THE FRUIT TEMPLE 6 $17.70\n2026-03-20 Woolworths 10 $57.17\n2026-03-20 THE FRUIT TEMPLE 6 $25.18\n2026-03-24 Woolworths 7 $37.20\n2026-03-25 THE FRUIT TEMPLE 2 $10.54\n2026-03-28 THE FRUIT TEMPLE 5 $17.92\n2026-03-31 Woolworths 18 $87.81\nHousehold total for March fresh veggies trips: $338.88 (sum of all 8 receipts).",
+        "actual": "Here are the **fresh vegetables shopping trips** in **March 2026**, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\n| **Date**       | **Store**         | **Items** | **Total (AUD)** |\n|----------------|-------------------|-----------|-----------------|\n| 2026-03-18     | Woolworths        | 17        | $85.36          |\n| 2026-03-18     | THE FRUIT TEMPLE  | 6         | $17.70          |\n| 2026-03-20     | Woolworths        | 10        | $57.17          |\n| 2026-03-20     | THE FRUIT TEMPLE  | 6         | $25.18          |\n| 2026-03-24     | Woolworths        | 7         | $37.20          |\n| 2026-03-25     | THE FRUIT TEMPLE  | 2         | $10.54          |\n| 2026-03-28     | THE FRUIT TEMPLE  | 5         | $17.92          |\n| 2026-03-31     | Woolworths        | 18        | $87.81          |\n\n---\n**Household total for March fresh veggies trips**:\n**$338.88** (sum of all 8 receipts).",
+        "passed": true,
+        "judge": {
+          "passed": true,
+          "judge_decision": "YES",
+          "judge_raw_response": "YES",
+          "judge_model": "mistral/mistral-large-latest",
+          "judge_telemetry": {
+            "latency_seconds": 1.175,
+            "input_tokens": 858,
+            "output_tokens": 2,
+            "total_tokens": 860
+          }
+        },
+        "error": null,
+        "agent_response": {
+          "thread_id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+          "conversation": {
+            "id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+            "title": "What were all the fresh veggies shopping trips...",
+            "created_at": "2026-05-14T23:16:09.849Z",
+            "updated_at": "2026-05-14T23:16:17.789Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "What were all the fresh veggies shopping trips in March",
+              "thread_id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+              "conversation": {
+                "id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+                "title": "What were all the fresh veggies shopping trips...",
+                "created_at": "2026-05-14T23:16:09.849Z",
+                "updated_at": "2026-05-14T23:16:17.789Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "Here are the **fresh vegetables shopping trips** in **March 2026**, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\n| **Date**       | **Store**         | **Items** | **Total (AUD)** |\n|----------------|-------------------|-----------|-----------------|\n| 2026-03-18     | Woolworths        | 17        | $85.36          |\n| 2026-03-18     | THE FRUIT TEMPLE  | 6         | $17.70          |\n| 2026-03-20     | Woolworths        | 10        | $57.17          |\n| 2026-03-20     | THE FRUIT TEMPLE  | 6         | $25.18          |\n| 2026-03-24     | Woolworths        | 7         | $37.20          |\n| 2026-03-25     | THE FRUIT TEMPLE  | 2         | $10.54          |\n| 2026-03-28     | THE FRUIT TEMPLE  | 5         | $17.92          |\n| 2026-03-31     | Woolworths        | 18        | $87.81          |\n\n---\n**Household total for March fresh veggies trips**:\n**$338.88** (sum of all 8 receipts).",
+                "stats": {
+                  "total_tat_seconds": 7.937,
+                  "input_tokens": 4647,
+                  "output_tokens": 370,
+                  "total_tokens": 5017,
+                  "tool_calls": 3,
+                  "tools": [
+                    "embed_receipt_query",
+                    "search_receipt_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+                "conversation": {
+                  "id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+                  "title": "What were all the fresh veggies shopping trips...",
+                  "created_at": "2026-05-14T23:16:09.849Z",
+                  "updated_at": "2026-05-14T23:16:09.849Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+                "conversation": {
+                  "id": "ce17f32c-fc4f-4be4-be52-39e9f23a8ace",
+                  "title": "What were all the fresh veggies shopping trips...",
+                  "created_at": "2026-05-14T23:16:09.849Z",
+                  "updated_at": "2026-05-14T23:16:17.789Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "Here are the **fresh vegetables shopping trips** in **March 2026**, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\n| **Date**       | **Store**         | **Items** | **Total (AUD)** |\n|----------------|-------------------|-----------|-----------------|\n| 2026-03-18     | Woolworths        | 17        | $85.36          |\n| 2026-03-18     | THE FRUIT TEMPLE  | 6         | $17.70          |\n| 2026-03-20     | Woolworths        | 10        | $57.17          |\n| 2026-03-20     | THE FRUIT TEMPLE  | 6         | $25.18          |\n| 2026-03-24     | Woolworths        | 7         | $37.20          |\n| 2026-03-25     | THE FRUIT TEMPLE  | 2         | $10.54          |\n| 2026-03-28     | THE FRUIT TEMPLE  | 5         | $17.92          |\n| 2026-03-31     | Woolworths        | 18        | $87.81          |\n\n---\n**Household total for March fresh veggies trips**:\n**$338.88** (sum of all 8 receipts).",
+                  "stats": {
+                    "total_tat_seconds": 7.937,
+                    "input_tokens": 4647,
+                    "output_tokens": 370,
+                    "total_tokens": 5017,
+                    "tool_calls": 3,
+                    "tools": [
+                      "embed_receipt_query",
+                      "search_receipt_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "Here are the **fresh vegetables shopping trips** in **March 2026**, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\n| **Date**       | **Store**         | **Items** | **Total (AUD)** |\n|----------------|-------------------|-----------|-----------------|\n| 2026-03-18     | Woolworths        | 17        | $85.36          |\n| 2026-03-18     | THE FRUIT TEMPLE  | 6         | $17.70          |\n| 2026-03-20     | Woolworths        | 10        | $57.17          |\n| 2026-03-20     | THE FRUIT TEMPLE  | 6         | $25.18          |\n| 2026-03-24     | Woolworths        | 7         | $37.20          |\n| 2026-03-25     | THE FRUIT TEMPLE  | 2         | $10.54          |\n| 2026-03-28     | THE FRUIT TEMPLE  | 5         | $17.92          |\n| 2026-03-31     | Woolworths        | 18        | $87.81          |\n\n---\n**Household total for March fresh veggies trips**:\n**$338.88** (sum of all 8 receipts).",
+          "latest_message": {
+            "role": "assistant",
+            "content": "Here are the **fresh vegetables shopping trips** in **March 2026**, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\n| **Date**       | **Store**         | **Items** | **Total (AUD)** |\n|----------------|-------------------|-----------|-----------------|\n| 2026-03-18     | Woolworths        | 17        | $85.36          |\n| 2026-03-18     | THE FRUIT TEMPLE  | 6         | $17.70          |\n| 2026-03-20     | Woolworths        | 10        | $57.17          |\n| 2026-03-20     | THE FRUIT TEMPLE  | 6         | $25.18          |\n| 2026-03-24     | Woolworths        | 7         | $37.20          |\n| 2026-03-25     | THE FRUIT TEMPLE  | 2         | $10.54          |\n| 2026-03-28     | THE FRUIT TEMPLE  | 5         | $17.92          |\n| 2026-03-31     | Woolworths        | 18        | $87.81          |\n\n---\n**Household total for March fresh veggies trips**:\n**$338.88** (sum of all 8 receipts).",
+            "stats": {
+              "total_tat_seconds": 7.937,
+              "input_tokens": 4647,
+              "output_tokens": 370,
+              "total_tokens": 5017,
+              "tool_calls": 3,
+              "tools": [
+                "embed_receipt_query",
+                "search_receipt_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 7.937,
+            "input_tokens": 4647,
+            "output_tokens": 370,
+            "total_tokens": 5017,
+            "tool_calls": 3,
+            "tools_called": [
+              "embed_receipt_query",
+              "search_receipt_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      }
+    ],
+    "judge_model": "mistral/mistral-large-latest"
   }
 }
