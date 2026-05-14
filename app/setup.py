@@ -87,43 +87,61 @@ def setup_vectorize(
     cf_client, cloudflare_account_id_secret: SecretStr, infra_config: Cfg
 ):
     log.info("Setting up Cloudflare Vectorize...")
-    kirana_vectorize_index = cf_client.vectorize.indexes.create(
-        account_id=cloudflare_account_id_secret.get_secret_value(),
-        name=infra_config.cloudflare.vectorize_index_name,
-        config={
-            "dimensions": infra_config.cloudflare.vectorize_index_dimension,
-            "metric": "cosine",
-        },
-    )
-    if kirana_vectorize_index is None:
-        raise SetupError("Cloudflare Vectorize index creation failed")
-    else:
-        log.info(
-            f"Cloudflare Vectorize index created for kirana with config: {kirana_vectorize_index.config}"
+    for index_name in (
+        infra_config.cloudflare.vectorize_index_name,
+        infra_config.cloudflare.vectorize_item_index_name,
+    ):
+        kirana_vectorize_index = cf_client.vectorize.indexes.create(
+            account_id=cloudflare_account_id_secret.get_secret_value(),
+            name=index_name,
+            config={
+                "dimensions": infra_config.cloudflare.vectorize_index_dimension,
+                "metric": "cosine",
+            },
         )
+        if kirana_vectorize_index is None:
+            raise SetupError(f"Cloudflare Vectorize index creation failed: {index_name}")
+        else:
+            log.info(
+                f"Cloudflare Vectorize index created for {index_name} "
+                f"with config: {kirana_vectorize_index.config}"
+            )
 
 
 def setup_vectorize_metadata_indices(
     cf_client, cloudflare_account_id_secret: SecretStr, infra_config: Cfg
 ):
     log.info("Setting up metadata indices for Cloudflare Vectorize...")
-    metadata_fields = infra_config.cloudflare.vectorize_index_metadata_fields
-    metadata_field_types = infra_config.cloudflare.vectorize_index_metadata_field_types
-    for idx_name, idx_type in zip(metadata_fields, metadata_field_types):
-        metadata_index = cf_client.vectorize.indexes.metadata_index.create(
-            index_name=infra_config.cloudflare.vectorize_index_name,
-            index_type=idx_type,
-            account_id=cloudflare_account_id_secret.get_secret_value(),
-            property_name=idx_name,
-        )
-        if metadata_index is None:
-            raise SetupError(
-                f"Metadata index creation failed for {idx_name} with type {idx_type}"
+    index_metadata = [
+        (
+            infra_config.cloudflare.vectorize_index_name,
+            infra_config.cloudflare.vectorize_index_metadata_fields,
+            infra_config.cloudflare.vectorize_index_metadata_field_types,
+        ),
+        (
+            infra_config.cloudflare.vectorize_item_index_name,
+            infra_config.cloudflare.vectorize_item_index_metadata_fields,
+            infra_config.cloudflare.vectorize_item_index_metadata_field_types,
+        ),
+    ]
+    for index_name, metadata_fields, metadata_field_types in index_metadata:
+        for idx_name, idx_type in zip(metadata_fields, metadata_field_types, strict=True):
+            metadata_index = cf_client.vectorize.indexes.metadata_index.create(
+                index_name=index_name,
+                index_type=idx_type,
+                account_id=cloudflare_account_id_secret.get_secret_value(),
+                property_name=idx_name,
             )
-        else:
-            log.info(
-                f"Metadata index created for {idx_name} with type {idx_type} and mutation id {metadata_index.mutation_id}"
-            )
+            if metadata_index is None:
+                raise SetupError(
+                    f"Metadata index creation failed for {index_name}.{idx_name} "
+                    f"with type {idx_type}"
+                )
+            else:
+                log.info(
+                    f"Metadata index created for {index_name}.{idx_name} "
+                    f"with type {idx_type} and mutation id {metadata_index.mutation_id}"
+                )
 
 
 def setup_ai_gateway(

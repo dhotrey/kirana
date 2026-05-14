@@ -384,7 +384,7 @@
 
       .composer-row {
         display: grid;
-        grid-template-columns: 180px minmax(0, 1fr) auto;
+        grid-template-columns: 180px auto minmax(0, 1fr) auto;
         gap: 10px;
         align-items: end;
       }
@@ -408,6 +408,33 @@
         max-height: 160px;
         resize: vertical;
         padding: 11px 12px;
+      }
+
+      .upload-button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: var(--text);
+        padding: 0 12px;
+        cursor: pointer;
+        font-weight: 650;
+      }
+
+      .upload-button:focus-within {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .upload-button input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
       }
 
       .send-button {
@@ -454,7 +481,7 @@
         }
 
         .composer-row {
-          grid-template-columns: 1fr auto;
+          grid-template-columns: auto 1fr auto;
         }
 
         select {
@@ -485,6 +512,10 @@
         <form class="composer" id="composer">
           <div class="composer-row">
             <select id="modelSelect" aria-label="Model"></select>
+            <label class="upload-button" title="Search receipts by image">
+              Upload
+              <input id="imageInput" type="file" accept="image/*" />
+            </label>
             <textarea
               id="messageInput"
               placeholder="Type your message..."
@@ -503,6 +534,7 @@
         threadId: null,
         conversations: [],
         sending: false,
+        selectedImage: null,
       };
 
       const els = {
@@ -512,6 +544,7 @@
         messages: document.querySelector("#messages"),
         composer: document.querySelector("#composer"),
         modelSelect: document.querySelector("#modelSelect"),
+        imageInput: document.querySelector("#imageInput"),
         messageInput: document.querySelector("#messageInput"),
         sendButton: document.querySelector("#sendButton"),
         status: document.querySelector("#status"),
@@ -1070,6 +1103,50 @@
         }
       }
 
+      async function streamImageChat({ threadId, model, message, image }, handler) {
+        const formData = new FormData();
+        formData.append("thread_id", threadId || "");
+        formData.append("model", model);
+        formData.append("message", message);
+        formData.append("image", image);
+
+        const response = await fetch("/api/chat/image/stream", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok || !response.body) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.detail || `Request failed: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let separatorIndex;
+          while ((separatorIndex = buffer.indexOf("\n\n")) !== -1) {
+            const rawEvent = buffer.slice(0, separatorIndex);
+            buffer = buffer.slice(separatorIndex + 2);
+            const dataLines = rawEvent
+              .split("\n")
+              .filter((line) => line.startsWith("data:"))
+              .map((line) => line.slice(5).trimStart());
+            if (!dataLines.length) continue;
+            let event;
+            try {
+              event = JSON.parse(dataLines.join("\n"));
+            } catch (parseError) {
+              continue;
+            }
+            handler(event);
+          }
+        }
+      }
+
       async function loadModels() {
         const models = await api("/api/models");
         els.modelSelect.innerHTML = "";
@@ -1106,12 +1183,15 @@
       async function sendMessage(event) {
         event.preventDefault();
         const text = els.messageInput.value.trim();
-        if (!text || state.sending) return;
+        const image = state.selectedImage;
+        if ((!text && !image) || state.sending) return;
 
         state.sending = true;
         els.sendButton.disabled = true;
         els.messageInput.value = "";
-        appendMessage("user", text);
+        state.selectedImage = null;
+        els.imageInput.value = "";
+        appendMessage("user", image ? `${text || "Search this image"}\n[Image: ${image.name}]` : text);
         setStatus("Thinking...");
 
         const streamingMessage = appendStreamingAssistant();
@@ -1121,13 +1201,21 @@
         let streamError = null;
 
         try {
-          await streamChat(
-            {
-              threadId: state.threadId,
-              model: els.modelSelect.value,
-              message: text,
-            },
-            (event) => {
+          const stream = image ? streamImageChat : streamChat;
+          const payload = image
+            ? {
+                threadId: state.threadId,
+                model: els.modelSelect.value,
+                message: text,
+                image,
+              }
+            : {
+                threadId: state.threadId,
+                model: els.modelSelect.value,
+                message: text,
+              };
+
+          await stream(payload, (event) => {
               if (event.type === "start") {
                 state.threadId = event.thread_id;
                 if (event.conversation) {
@@ -1150,8 +1238,7 @@
               } else if (event.type === "error") {
                 streamError = new Error(event.detail || "stream failed");
               }
-            },
-          );
+            });
 
           if (streamError) throw streamError;
 
@@ -1177,8 +1264,17 @@
         }
       }
 
+      async function uploadImage(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file || state.sending) return;
+        state.selectedImage = file;
+        setStatus(`Attached image: ${file.name}`);
+        els.messageInput.focus();
+      }
+
       els.newConversation.addEventListener("click", newConversation);
       els.composer.addEventListener("submit", sendMessage);
+      els.imageInput.addEventListener("change", uploadImage);
       els.messageInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();

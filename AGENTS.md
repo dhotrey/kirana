@@ -4,16 +4,16 @@
 
 - This is an early-stage research/prototype repo for grocery finance QA across receipts, Splitwise exports, and pantry/item images.
 - The main design goal is to compare retrieval strategy vs. model tier. Preserve the ablation boundaries described in `README.md`: SQL-only vs. hybrid retrieval, weak vs. strong model, plus a plain-LLM baseline.
-- Current code lives under `backend/`. Treat `backend/.venv/` as generated local environment state; do not read, edit, format, or commit files inside it.
+- Current code lives under `app/`. Treat `app/.venv/` as generated local environment state; do not read, edit, format, or commit files inside it.
 
-## Backend Workflow
+## app/ Workflow
 
 - Use Python `>=3.13`.
-- Manage backend dependencies with `uv` from the `backend/` directory.
+- Manage app/ dependencies with `uv` from the `app/` directory.
 - Common commands:
-  - `cd backend && uv sync`
-  - `cd backend && uv run python main.py`
-- Keep `backend/uv.lock` in sync when changing dependencies in `backend/pyproject.toml`.
+  - `cd app/ && uv sync`
+  - `cd app/ && uv run python main.py`
+- Keep `app/uv.lock` in sync when changing dependencies in `app/pyproject.toml`.
 
 ## Implementation Conventions
 
@@ -39,6 +39,6 @@
 
 ## Before Finishing Work
 
-- Run the narrowest relevant check available. For the current backend skeleton, use `cd backend && uv run python main.py`.
-- If tests or linters are introduced later, document and run them with `uv run ...` from `backend/`.
+- Run the narrowest relevant check available. For the current app/ skeleton, use `cd app/ && uv run python main.py`.
+- If tests or linters are introduced later, document and run them with `uv run ...` from `app/`.
 - Keep README claims, environment flags, and evaluation conditions aligned with code changes.

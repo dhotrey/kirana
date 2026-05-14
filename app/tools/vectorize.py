@@ -75,6 +75,38 @@ class ReceiptVectorSearchInput(BaseModel):
         return self
 
 
+class ItemVectorSearchInput(BaseModel):
+    embedding_key: str | None = Field(
+        default=None,
+        description=(
+            "Embedding cache key returned by embed_receipt_query or supplied in "
+            "uploaded image context. Prefer this over passing a raw vector."
+        ),
+    )
+    vector: list[float] | None = Field(
+        default=None,
+        description=(
+            "Raw query vector. Use only if an embedding key is unavailable; it must "
+            "match the configured Vectorize dimension."
+        ),
+    )
+    top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=100,
+        description=(
+            "Maximum nearest-neighbor item-name matches to return. Defaults to "
+            "kirana.receipt_vector_search_top_k."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_vector_source(self) -> "ItemVectorSearchInput":
+        if not self.embedding_key and self.vector is None:
+            raise ValueError("Provide embedding_key or vector")
+        return self
+
+
 def _tool_span(tool_name: str, **attributes):
     if not logfire_enabled():
         return nullcontext()
@@ -133,6 +165,26 @@ def extract_vectorize_matches(result: Any) -> list[dict[str, Any]]:
     if matches is None:
         return []
     return [_match_to_dict(match) for match in matches]
+
+
+def _query_vector_from_input(
+    *,
+    embedding_key: str | None,
+    vector: list[float] | None,
+    embedding_cache: dict[str, list[float]],
+    expected_dimensions: int,
+) -> list[float]:
+    query_vector = vector
+    if query_vector is None and embedding_key:
+        query_vector = embedding_cache.get(embedding_key)
+    if query_vector is None:
+        raise ValueError("Unknown embedding_key; create or supply an embedding first")
+    if len(query_vector) != expected_dimensions:
+        raise ValueError(
+            "Query vector dimension does not match Vectorize index "
+            f"dimension {expected_dimensions}"
+        )
+    return query_vector
 
 
 def _validate_filter_value(
@@ -232,8 +284,10 @@ def validate_vectorize_filter(
     return filters
 
 
-def build_vectorize_tools(cfg: Config) -> list[BaseTool]:
-    embedding_cache: dict[str, list[float]] = {}
+def build_vectorize_tools(
+    cfg: Config, embedding_cache: dict[str, list[float]] | None = None
+) -> list[BaseTool]:
+    embedding_cache = embedding_cache if embedding_cache is not None else {}
     embedder: Embedder | None = None
     cf_client: Any | None = None
 
@@ -244,6 +298,8 @@ def build_vectorize_tools(cfg: Config) -> list[BaseTool]:
                 cfg.ingestion.embedding_model,
                 cfg.ingestion.embedding_dim,
                 logger.bind(image_id="-", tool="embed_receipt_query"),
+                image_max_dimension=cfg.ingestion.embedding_image_max_dimension,
+                device=cfg.ingestion.embedding_device,
             )
         return embedder
 
@@ -339,16 +395,12 @@ def build_vectorize_tools(cfg: Config) -> list[BaseTool]:
             filters=filters,
         ) as span:
             try:
-                query_vector = vector
-                if query_vector is None and embedding_key:
-                    query_vector = embedding_cache.get(embedding_key)
-                if query_vector is None:
-                    raise ValueError("Unknown embedding_key; call embed_receipt_query")
-                if len(query_vector) != cfg.cloudflare.vectorize_index_dimension:
-                    raise ValueError(
-                        "Query vector dimension does not match Vectorize index "
-                        f"dimension {cfg.cloudflare.vectorize_index_dimension}"
-                    )
+                query_vector = _query_vector_from_input(
+                    embedding_key=embedding_key,
+                    vector=vector,
+                    embedding_cache=embedding_cache,
+                    expected_dimensions=cfg.cloudflare.vectorize_index_dimension,
+                )
                 validated_filters = validate_vectorize_filter(filters, cfg)
                 query_kwargs: dict[str, Any] = {
                     "index_name": cfg.cloudflare.vectorize_index_name,
@@ -393,4 +445,82 @@ def build_vectorize_tools(cfg: Config) -> list[BaseTool]:
                 )
             return json.dumps(response)
 
-    return [embed_receipt_query, search_receipt_vectors]
+    @tool(
+        "search_item_vectors",
+        args_schema=ItemVectorSearchInput,
+        description=(
+            "Search Cloudflare Vectorize item-name embeddings built from distinct "
+            "receipt_items.item_name values. Use this for uploaded image questions "
+            "or fuzzy item identification before querying receipt_items in SQL. "
+            "This item index only has item_name metadata; apply date, store, "
+            "receipt_id, or amount constraints in query_finance_db after retrieving "
+            "candidate item names."
+        ),
+    )
+    def search_item_vectors(
+        embedding_key: str | None = None,
+        vector: list[float] | None = None,
+        top_k: int | None = None,
+    ) -> str:
+        started_at = time.perf_counter()
+        effective_top_k = top_k or cfg.kirana.receipt_vector_search_top_k
+        logger.info(
+            "tool call search_item_vectors embedding_key={} top_k={}",
+            embedding_key,
+            effective_top_k,
+        )
+        with _tool_span(
+            "search_item_vectors",
+            embedding_key=embedding_key,
+            top_k=effective_top_k,
+        ) as span:
+            try:
+                query_vector = _query_vector_from_input(
+                    embedding_key=embedding_key,
+                    vector=vector,
+                    embedding_cache=embedding_cache,
+                    expected_dimensions=cfg.cloudflare.vectorize_index_dimension,
+                )
+                account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
+                if not account_id:
+                    raise RuntimeError("CLOUDFLARE_ACCOUNT_ID is not set")
+                result = get_cf_client().vectorize.indexes.query(
+                    index_name=cfg.cloudflare.vectorize_item_index_name,
+                    account_id=account_id,
+                    vector=query_vector,
+                    top_k=effective_top_k,
+                    return_metadata="indexed",
+                    return_values=False,
+                )
+                matches = extract_vectorize_matches(result)
+                item_names = [
+                    match["metadata"].get("item_name")
+                    for match in matches
+                    if isinstance(match.get("metadata"), dict)
+                    and isinstance(match["metadata"].get("item_name"), str)
+                ]
+                response = {
+                    "ok": True,
+                    "index_name": cfg.cloudflare.vectorize_item_index_name,
+                    "top_k": effective_top_k,
+                    "match_count": len(matches),
+                    "item_names": item_names,
+                    "matches": matches,
+                }
+            except Exception as exc:
+                logger.exception("tool call search_item_vectors failed")
+                response = {"ok": False, "error": str(exc)}
+
+            elapsed_ms = round((time.perf_counter() - started_at) * 1000, 3)
+            if span is not None and logfire_enabled():
+                span.set_attributes(
+                    {
+                        "success": response["ok"],
+                        "elapsed_ms": elapsed_ms,
+                        "match_count": response.get("match_count", 0),
+                        "error": response.get("error"),
+                    }
+                )
+            return json.dumps(response)
+
+    return [embed_receipt_query, search_receipt_vectors, search_item_vectors]

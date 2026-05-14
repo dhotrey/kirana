@@ -6,6 +6,6 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 
 ## Current Documents
 
-- [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `backend/setup.py`.
+- [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `app/setup.py`.
 - [Ingestion Pipeline](./ingestion.md): receipt CLI flow, Splitwise import separation, storage responsibilities, observability, and error handling.
 - [API Endpoints](./api.md): FastAPI Swagger/OpenAPI locations and the current chat API request/response contracts.

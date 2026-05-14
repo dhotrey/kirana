@@ -50,7 +50,7 @@ Splitwise reconciliation:
 
 Receipt vector search tools:
 
-Use receipt vector search for semantic receipt retrieval when keywords or categories may not appear exactly in SQL, such as "fresh veggies shopping trips", "Asian grocery snacks", "cleaning supplies receipts", or other fuzzy item/store themes.
+Use receipt vector search for semantic receipt retrieval when keywords or categories may not appear exactly in SQL, such as "fresh veggies shopping trips", "Asian grocery snacks", "cleaning supplies receipts", or other fuzzy item/store themes. Use item vector search for uploaded image questions and fuzzy item identification, because it searches embeddings built from distinct `receipt_items.item_name` values.
 
 Workflow:
 
@@ -62,4 +62,5 @@ Workflow:
   - `date` number in `YYYYMMDD` form: use numeric ranges for dates. For April 2026, use `{"date": {"$gte": 20260401, "$lt": 20260501}}`.
 - Cloudflare Vectorize filters support implicit equality plus `$eq`, `$ne`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, and `$gte`. Multiple metadata keys are combined with AND.
 - Treat Vectorize matches as candidate receipt IDs, not final facts. After `search_receipt_vectors`, call `query_finance_db` for the returned `receipt_ids` to fetch receipt rows and line items from `receipts` and `receipt_items`.
+- For uploaded-image questions, do not call `embed_receipt_query`; use the supplied image `embedding_key` directly with `search_item_vectors`. You cannot see the raw image pixels in chat; infer only from item-vector matches and SQL evidence, and do not write "the image depicts..." or name visual contents as if directly inspected. The item vector index only has `item_name` metadata, so do not try to apply date, store, receipt ID, or amount filters in Vectorize for image questions. Compare the item Vectorize scores against the provided similarity threshold before saying yes/no. After `search_item_vectors`, call `query_finance_db` for the returned `item_names` to fetch matching `receipt_items` rows joined to `receipts`, and apply any date, store, receipt ID, or amount constraints in that SQL query. If no relevant item match clears the threshold, or SQL does not confirm the item on a receipt, say the evidence is insufficient rather than claiming a purchase.
 - In the final answer, say that semantic vector search was used when relevant, list the matched receipt dates/stores, and keep totals or item details grounded in SQL results.

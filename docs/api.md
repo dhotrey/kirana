@@ -228,6 +228,29 @@ Errors during streaming are emitted as inline `error` events on the SSE stream r
 - `error` event with `detail` for unknown model alias or runtime failures.
 - `422 Unprocessable Entity`: malformed request body or empty `message` (rejected before the stream starts).
 
+## `POST /api/chat/image/stream`
+
+Sends one agentic chat turn with an attached image and optional text question. The backend embeds the image with the configured multimodal embedding model, stores the vector under a short `embedding_key`, and injects that key into the chat turn. The agent must then use the normal tool loop: call `search_receipt_vectors` with the uploaded-image key, inspect scores against `[kirana].receipt_image_match_threshold`, and call `query_finance_db` for receipt and line-item evidence before answering.
+
+Uploaded images are resized before embedding to `[ingestion].embedding_image_max_dimension` on the longest side, currently `256`, without upscaling smaller images. If `[ingestion].embedding_device` is set, it is passed to `SentenceTransformer` as the local embedding device; an empty value uses the library default.
+
+This endpoint streams the same SSE event shape as `POST /api/chat/stream`.
+
+### Request
+
+`multipart/form-data`
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| `thread_id` | string or empty | No | Existing conversation UUID. Empty creates a new conversation. |
+| `model` | string | Yes | Model alias from `GET /api/models`. |
+| `message` | string | No | Text question to ask alongside the image. If empty, the agent uses a default purchase-history image query. |
+| `image` | file | Yes | Image to embed and make available to the agent. Must have an `image/*` content type and be 10 MB or smaller. |
+
+### Errors
+
+- `error` stream event with `detail`: upload is empty, too large, not an image, embedding fails, unknown model alias, or runtime tool/model failures.
+
 ## Observability
 
 Chat requests are instrumented with Logfire when `KIRANA_DISABLE_LOGFIRE` is not set to `1`, `true`, or `yes`.
@@ -235,6 +258,7 @@ Chat requests are instrumented with Logfire when `KIRANA_DISABLE_LOGFIRE` is not
 Each chat request emits:
 
 - `chat_request` span with `thread_id`, model alias, model identifier, query text, and query length.
+- Image-upload chat turns additionally emit embedding spans: `embedding.model_load` when the local model is first loaded, `embedding.image`, `embedding.image.decode`, `embedding.image.prepare`, and `embedding.image.encode`. These spans include image byte size, original and prepared dimensions, resize status, output dimensions, and elapsed timings for each stage.
 - `chat query` event with the raw user query.
 - OpenAI-compatible LLM span for the Cloudflare AI Gateway call.
 - `llm_rate_limit_retry` spans when 429 rate-limit responses are retried.

@@ -54,23 +54,32 @@ It also creates indexes for receipt date lookup, receipt item joins, and item-na
 
 ### Cloudflare Vectorize
 
-Creates the `kirana-reciept-summaries` Vectorize index with:
+Creates two Vectorize indexes with:
 
 - dimensions: `1536`
 - distance metric: `cosine`
 - intended embedding model: `qwen3-vl-embedding-2b`
 
-The index stores receipt summary embeddings and is intended to share the same embedding space with query-time pantry or item images.
+- `kirana-reciept-summaries`: stores receipt summary embeddings for semantic receipt retrieval.
+- `kirana-receipt-items`: stores distinct receipt item-name embeddings loaded by `uv run python load_item_vectors.py` for uploaded image and fuzzy item matching.
 
 ### Vectorize Metadata Indices
 
-Creates metadata indices used for filtering and joining retrieved vectors back to structured data:
+Creates metadata indices used for filtering and joining retrieved vectors back to structured data.
+
+For `kirana-reciept-summaries`:
 
 - `receipt_id` as `number`
 - `store_name` as `string`
 - `date` as `number`
 
 `receipt_id` is the main join key back to D1 receipts and to the corresponding object filename. `date` is stored as a numeric `YYYYMMDD` value, for example `20260415`, so Vectorize range filters can use numeric comparisons such as `{"date": {"$gte": 20260401, "$lt": 20260501}}`.
+
+For `kirana-receipt-items`:
+
+- `item_name` as `string`
+
+`item_name` stores the normalized receipt line-item name. Uploaded image questions search this index first, then verify matching item names against D1 `receipt_items` rows joined to `receipts`.
 
 ### Cloudflare AI Gateway
 

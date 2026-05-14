@@ -9,6 +9,7 @@ class KiranaConfig(pydantic.BaseModel):
     chat_db_path: str = "db.sqlite"
     chat_log_file: str = "logs/chat.log"
     receipt_vector_search_top_k: int = pydantic.Field(default=8, ge=1, le=100)
+    receipt_image_match_threshold: float = pydantic.Field(default=0.5, ge=0, le=1)
 
     @pydantic.model_validator(mode="after")
     def validate_model_aliases(self) -> "KiranaConfig":
@@ -27,10 +28,17 @@ class CloudflareConfig(pydantic.BaseModel):
     d1_database_name: str
     ai_gateway_name: str
     vectorize_index_name: str
+    vectorize_item_index_name: str
     vectorize_embedding_model: str
     vectorize_index_dimension: int
     vectorize_index_metadata_fields: list[str]
     vectorize_index_metadata_field_types: list[Literal["string", "number", "boolean"]]
+    vectorize_item_index_metadata_fields: list[str] = pydantic.Field(
+        default_factory=lambda: ["item_name"]
+    )
+    vectorize_item_index_metadata_field_types: list[
+        Literal["string", "number", "boolean"]
+    ] = pydantic.Field(default_factory=lambda: ["string"])
 
 
 class TigrisConfig(pydantic.BaseModel):
@@ -59,6 +67,8 @@ class IngestionConfig(pydantic.BaseModel):
     sum_tolerance_pct: float = pydantic.Field(ge=0)
     embedding_model: str
     embedding_dim: int = pydantic.Field(gt=0, le=1536)
+    embedding_image_max_dimension: int = pydantic.Field(default=256, gt=0)
+    embedding_device: str | None = None
     dry_run: bool
 
     @pydantic.model_validator(mode="after")

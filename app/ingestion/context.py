@@ -106,6 +106,8 @@ def build_context(config_path: str = "config.toml") -> IngestionContext:
             cfg.ingestion.embedding_model,
             cfg.ingestion.embedding_dim,
             logger.bind(image_id="-"),
+            image_max_dimension=cfg.ingestion.embedding_image_max_dimension,
+            device=cfg.ingestion.embedding_device,
         ),
         gemini_agent=_build_agent(cfg.ingestion.gemini_model, cfg),
         mistral_agent=_build_agent(cfg.ingestion.mistral_model, cfg),

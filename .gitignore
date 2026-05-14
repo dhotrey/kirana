@@ -222,5 +222,5 @@ __marimo__/
 knowledge-base/*
 .codex
 .vscode
-backend/logs/
+app/logs/
 app/logs/chat.log

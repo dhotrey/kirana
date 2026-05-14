@@ -5,6 +5,7 @@ model_identifiers = { mistral = "mistral/mistral-large-latest", "gemini-3.1-flas
 chat_db_path = "db.sqlite"
 chat_log_file = "logs/chat.log"
 receipt_vector_search_top_k = 8
+receipt_image_match_threshold = 0.50
 
 [knowledge_base]
 splitwise_csv_path = "../knowledge-base/splitwise/splitwise-export-26-04-2026.csv"
@@ -15,10 +16,13 @@ splitwise_csv_path = "../knowledge-base/splitwise/splitwise-export-26-04-2026.cs
 d1_database_name = "kirana"
 ai_gateway_name = "kirana-ai-gateway"
 vectorize_index_name = "kirana-reciept-summaries"
+vectorize_item_index_name = "kirana-receipt-items"
 vectorize_embedding_model = "qwen3-vl-embedding-2b"
 vectorize_index_dimension = 1536
 vectorize_index_metadata_fields = ["receipt_id", "store_name", "date"] # receipt_id is the join key referenced by Cloudflare Vectorize metadata and the Tigris filename in subsequent steps.
 vectorize_index_metadata_field_types = ["number", "string", "number"]
+vectorize_item_index_metadata_fields = ["item_name"]
+vectorize_item_index_metadata_field_types = ["string"]
 
 [tigris]
 bucket_name = "kirana-kb-raw-data"
@@ -41,4 +45,6 @@ retry_backoff_max_seconds = 30.0
 sum_tolerance_pct = 5.0
 embedding_model = "Qwen/Qwen3-VL-Embedding-2B"
 embedding_dim = 1536
+embedding_image_max_dimension = 256
+embedding_device = ""
 dry_run = false

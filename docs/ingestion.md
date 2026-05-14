@@ -5,6 +5,7 @@
 Kirana ingestion is a set of local, explicitly-run flows that populate the grocery finance knowledge base. The receipt image flow and the Splitwise CSV import are part of the same ingestion boundary, but they are executed independently:
 
 - Receipt images run through `app/ingest_receipts.py`, which extracts, validates, summarizes, embeds, stores, archives, and logs each receipt.
+- Receipt item names run through `app/load_item_vectors.py` after receipt ingestion, embedding distinct `receipt_items.item_name` values into a separate Vectorize index for item/image matching.
 - Splitwise exports are imported as a separate one-shot CSV flow into D1. They do not use VLM extraction, embedding, Vectorize, or Tigris.
 
 The receipt flow writes to three persistent stores: Cloudflare D1 for structured receipt and item rows, Cloudflare Vectorize for semantic retrieval over receipt summaries, and Tigris for raw image and derived artifact archival. The pipeline runs on demand from the local machine; there is no hosted orchestrator or filesystem watcher.
@@ -38,6 +39,38 @@ uv run python ingest_receipts.py --config config.toml
 ```
 
 `ingest_receipts.py` is intentionally thin. Most work happens in `app/ingestion/`; the CLI owns startup, config loading, input selection, dry-run mode, and per-image orchestration.
+
+---
+
+## How to Run Item Vector Ingestion
+
+Run this after receipt ingestion has populated D1:
+
+```sh
+uv run python load_item_vectors.py
+```
+
+Exercise the D1 read and local embedding flow without writing to Vectorize:
+
+```sh
+uv run python load_item_vectors.py --dry-run
+```
+
+The item flow reads:
+
+```sql
+SELECT DISTINCT item_name FROM receipt_items;
+```
+
+It skips null or blank names, normalizes whitespace, deduplicates case-insensitively, embeds each item name locally, and upserts each vector individually into the configured `cloudflare.vectorize_item_index_name`. If the run fails after writing any item vectors, the script deletes the vectors it wrote in that run before exiting so the item index is not left with partial bad entries. Each vector stores the item name in metadata:
+
+```json
+{
+  "item_name": "Baby Spinach"
+}
+```
+
+This index is intentionally separate from the receipt-summary index. Uploaded image questions use the image embedding against the item-name index first, then the chat agent verifies any matched item names through SQL joins over `receipt_items` and `receipts`.
 
 ---
 
@@ -142,7 +175,7 @@ The semantic summary is embedded locally using the configured Qwen embedding mod
 
 `date` is stored as a numeric `YYYYMMDD` value because the Vectorize metadata index is a number index. Query-time date filters should use numeric ranges, for example `{"date": {"$gte": 20260401, "$lt": 20260501}}`. The chat Vectorize search tool also normalizes ISO `YYYY-MM-DD` filter values to this numeric form before calling Cloudflare.
 
-The vector index is shared between receipt summaries and query-time pantry images, forming the cross-modal retrieval space described in the main README.
+Receipt-summary vectors and item-name vectors live in separate Vectorize indexes. Receipt-summary search uses `cloudflare.vectorize_index_name`; uploaded image questions use the image embedding against `cloudflare.vectorize_item_index_name`, then verify matched item names through SQL.
 
 Structured receipt and item rows are inserted into Cloudflare D1. D1's receipt ID is the join key referenced by Vectorize metadata and by the Tigris artifact path. The raw receipt image and derived artifacts are uploaded to Tigris under receipt-ID-prefixed keys such as `42/42-image.jpg`, `42/42-ocr.json`, and `42/42-summary.txt`, then the resulting image URL is written back to the corresponding D1 receipt row.
 

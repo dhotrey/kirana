@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import sqlite3
 import time
 import uuid
@@ -28,7 +29,12 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from loguru import logger
 
 from chat.gateway import build_chat_model, model_routes_via_gemini
-from chat.schemas import ChatMessage, ChatMessageStats, Conversation
+from chat.schemas import (
+    ChatMessage,
+    ChatMessageStats,
+    Conversation,
+)
+from ingestion.embeddings import Embedder
 from ingestion.prompts import load_prompt
 from ingestion.rate_limit import GeminiRateLimiter
 from tools import build_finance_tools, build_vectorize_tools
@@ -39,6 +45,8 @@ from utils.types import Config
 TITLE_MAX_CHARS = 48
 SYSTEM_PROMPT_NAME = "system_prompt"
 RATE_LIMIT_RETRY_DELAYS_SECONDS = (10, 15, 20)
+MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
+DEFAULT_IMAGE_QUERY = "Did I buy this item? Search the uploaded image against my receipts and show the evidence."
 
 
 @dataclass(frozen=True)
@@ -290,9 +298,11 @@ class ChatService:
         self.d1 = d1
         self.rate_limiter = GeminiRateLimiter(cfg.ingestion.gemini_min_interval_seconds)
         self._models: dict[str, Any] = {}
+        self._embedding_cache: dict[str, list[float]] = {}
+        self._image_embedder: Embedder | None = None
         self._tools: list[Any] = [
             *build_finance_tools(d1),
-            *build_vectorize_tools(cfg),
+            *build_vectorize_tools(cfg, self._embedding_cache),
         ]
         self._tool_by_name = {tool.name: tool for tool in self._tools}
         self.graph = self._build_graph()
@@ -403,10 +413,21 @@ class ChatService:
         message: str,
         model_name: str,
         thread_id: str | None,
+        image_bytes: bytes | None = None,
+        image_filename: str | None = None,
+        image_content_type: str | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         started_at = time.perf_counter()
         self._validate_model(model_name)
-        conversation = await self._ensure_conversation(thread_id, message)
+        effective_message = self._message_with_uploaded_image_context(
+            message=message,
+            image_bytes=image_bytes,
+            image_filename=image_filename,
+            image_content_type=image_content_type,
+        )
+        conversation = await self._ensure_conversation(
+            thread_id, message or DEFAULT_IMAGE_QUERY
+        )
         model_identifier = self.cfg.kirana.model_identifiers[model_name]
 
         yield {
@@ -424,6 +445,7 @@ class ChatService:
                 model_identifier=model_identifier,
                 query=message,
                 query_chars=len(message),
+                has_image=image_bytes is not None,
                 streaming=True,
             )
 
@@ -443,6 +465,7 @@ class ChatService:
                     model_identifier=model_identifier,
                     query=message,
                     query_chars=len(message),
+                    has_image=image_bytes is not None,
                     streaming=True,
                 )
 
@@ -471,7 +494,7 @@ class ChatService:
             async def produce_graph_events() -> None:
                 try:
                     async for chunk, metadata in self.graph.astream(
-                        {"messages": [HumanMessage(content=message)]},
+                        {"messages": [HumanMessage(content=effective_message)]},
                         self._thread_config(
                             conversation.id,
                             model_name=model_name,
@@ -724,6 +747,72 @@ class ChatService:
             model = build_chat_model(identifier, self.cfg)
             self._models[model_name] = model
         return model
+
+    def _get_image_embedder(self) -> Embedder:
+        if self._image_embedder is None:
+            self._image_embedder = Embedder(
+                self.cfg.ingestion.embedding_model,
+                self.cfg.ingestion.embedding_dim,
+                logger.bind(image_id="-", tool="chat_uploaded_image"),
+                image_max_dimension=self.cfg.ingestion.embedding_image_max_dimension,
+                device=self.cfg.ingestion.embedding_device,
+            )
+        return self._image_embedder
+
+    def _message_with_uploaded_image_context(
+        self,
+        *,
+        message: str,
+        image_bytes: bytes | None,
+        image_filename: str | None,
+        image_content_type: str | None,
+    ) -> str:
+        normalized_message = " ".join(message.split())
+        if image_bytes is None:
+            return normalized_message
+        if not image_bytes:
+            raise ValueError("image upload cannot be empty")
+        if len(image_bytes) > MAX_IMAGE_UPLOAD_BYTES:
+            raise ValueError("image upload must be 10 MB or smaller")
+        content_type = image_content_type or ""
+        if content_type and not content_type.lower().startswith("image/"):
+            raise ValueError("upload must be an image")
+
+        vector = self._get_image_embedder().embed_image(image_bytes)
+        if len(vector) != self.cfg.cloudflare.vectorize_index_dimension:
+            raise ValueError(
+                "Image vector dimension does not match Vectorize index "
+                f"dimension {self.cfg.cloudflare.vectorize_index_dimension}"
+            )
+        key_material = (
+            f"{self.cfg.ingestion.embedding_model}:{self.cfg.ingestion.embedding_dim}:"
+            f"{hashlib.sha256(image_bytes).hexdigest()}"
+        )
+        embedding_key = hashlib.sha256(key_material.encode("utf-8")).hexdigest()[:24]
+        self._embedding_cache[embedding_key] = vector
+
+        user_request = normalized_message or DEFAULT_IMAGE_QUERY
+        filename = image_filename or "uploaded image"
+        return (
+            f"{user_request}\n\n"
+            "Uploaded image context:\n"
+            f"- filename: {filename}\n"
+            f"- content_type: {content_type or 'unknown'}\n"
+            f"- embedding_key: {embedding_key}\n"
+            f"- embedding_model: {self.cfg.ingestion.embedding_model}\n"
+            f"- similarity_threshold: {self.cfg.kirana.receipt_image_match_threshold}\n\n"
+            "The assistant cannot see the raw uploaded image pixels in this chat "
+            "turn. It only has this embedding key plus Vectorize and SQL tool "
+            "results, so do not describe the image as if it was visually inspected. "
+            "Describe what the retrieval results suggest instead.\n\n"
+            "Use the uploaded image embedding as part of this request. Call "
+            "`search_item_vectors` with the supplied `embedding_key`; then use "
+            "`query_finance_db` to inspect receipts containing the matched item "
+            "names. Only claim I bought the likely matched item when a relevant item "
+            "Vectorize score is at or above the similarity threshold and SQL "
+            "confirms the item appeared on a receipt. Cite the item names, scores, "
+            "receipt IDs, stores, dates, and SQL-grounded item evidence."
+        )
 
     def _validate_model(self, model_name: str) -> None:
         if model_name not in self.cfg.kirana.model_identifiers:

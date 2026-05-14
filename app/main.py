@@ -13,7 +13,16 @@ from pathlib import Path
 import logfire
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, StreamingResponse
 from loguru import logger
 
@@ -137,6 +146,45 @@ async def chat_stream(payload: ChatRequest, request: Request) -> StreamingRespon
             yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
         except Exception as exc:
             logger.exception("chat stream failed")
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.post("/api/chat/image/stream")
+async def chat_image_stream(
+    request: Request,
+    model: str = Form(...),
+    message: str = Form(default=""),
+    thread_id: str | None = Form(default=None),
+    image: UploadFile = File(...),
+) -> StreamingResponse:
+    service = chat_service(request)
+
+    async def event_generator():
+        try:
+            image_bytes = await image.read()
+            async for event in service.chat_stream(
+                message=message,
+                model_name=model,
+                thread_id=thread_id,
+                image_bytes=image_bytes,
+                image_filename=image.filename,
+                image_content_type=image.content_type,
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+        except ValueError as exc:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
+        except Exception as exc:
+            logger.exception("image chat stream failed")
             yield f"data: {json.dumps({'type': 'error', 'detail': str(exc)})}\n\n"
 
     return StreamingResponse(

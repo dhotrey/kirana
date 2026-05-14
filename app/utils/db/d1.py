@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import ast
 import time
 from contextlib import nullcontext
 from dataclasses import dataclass
@@ -157,23 +158,46 @@ def extract_d1_rows(result: Any) -> list[dict[str, Any]]:
         if isinstance(current, list):
             rows = [_row_to_dict(item) for item in current]
             if rows and all(row is not None for row in rows):
-                return [row for row in rows if row is not None]
+                dict_rows = [row for row in rows if row is not None]
+                if any(
+                    {"results", "rows", "result"} & set(row.keys())
+                    for row in dict_rows
+                ):
+                    pending.extend(current)
+                    continue
+                return dict_rows
             pending.extend(current)
             continue
 
-        row = _row_to_dict(current)
-        if row is not None:
-            return [row]
-
         if isinstance(current, dict):
-            for key in ("results", "rows", "result"):
-                if key in current:
-                    pending.append(current[key])
-            continue
+            nested_keys = [key for key in ("results", "rows", "result") if key in current]
+            if nested_keys:
+                for key in nested_keys:
+                    nested = current[key]
+                    if isinstance(nested, str) and nested[:1] in {"[", "{"}:
+                        try:
+                            nested = ast.literal_eval(nested)
+                        except (SyntaxError, ValueError):
+                            pass
+                    pending.append(nested)
+                continue
+            return [{str(key): _jsonable(value) for key, value in current.items()}]
 
         for attr in ("results", "rows", "result"):
             if hasattr(current, attr):
                 pending.append(getattr(current, attr))
+                break
+        else:
+            row = _row_to_dict(current)
+            if row is not None:
+                nested = row.get("result")
+                if isinstance(nested, str) and nested[:1] in {"[", "{"}:
+                    try:
+                        pending.append(ast.literal_eval(nested))
+                        continue
+                    except (SyntaxError, ValueError):
+                        pass
+                return [row]
 
     return []
 

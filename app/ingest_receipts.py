@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         default="config.toml",
-        help="Path to backend config.toml",
+        help="Path to app/ config.toml",
     )
     parser.add_argument(
         "--image",

@@ -3,64 +3,64 @@ name: receipt ingestion pipeline
 overview: Build a source-agnostic, reusable receipt ingestion pipeline that takes an image (from disk batch or runtime upload) and produces a validated D1 row + Vectorize embedding + Tigris archive, instrumented with Logfire spans and per-receipt canonical JSON logs.
 todos:
   - id: schemas
-    content: Define Receipt and ReceiptItem Pydantic models with subtotal-vs-items ±5% validator in backend/ingestion/schemas.py
+    content: Define Receipt and ReceiptItem Pydantic models with subtotal-vs-items ±5% validator in app/ingestion/schemas.py
     status: completed
   - id: prompts
-    content: Write backend/prompts/receipt_extraction.md and backend/prompts/receipt_summary.md and a loader in backend/ingestion/prompts.py
+    content: Write app/prompts/receipt_extraction.md and app/prompts/receipt_summary.md and a loader in app/ingestion/prompts.py
     status: completed
   - id: rate_limit
-    content: Implement GeminiRateLimiter (5 RPM, monotonic-clock gate) in backend/ingestion/rate_limit.py
+    content: Implement GeminiRateLimiter (5 RPM, monotonic-clock gate) in app/ingestion/rate_limit.py
     status: completed
   - id: gemini
-    content: "Build pydantic-ai Gemini agent in backend/ingestion/gemini.py: image-in, Receipt-out, ModelRetry on validator failure, outer retry loop bounded by MAX_OCR_RETRIES that calls the rate limiter"
+    content: "Build pydantic-ai Gemini agent in app/ingestion/gemini.py: image-in, Receipt-out, ModelRetry on validator failure, outer retry loop bounded by MAX_OCR_RETRIES that calls the rate limiter"
     status: completed
   - id: mistral
-    content: Build pydantic-ai Mistral summary agent in backend/ingestion/mistral.py reading the system prompt from prompts/
+    content: Build pydantic-ai Mistral summary agent in app/ingestion/mistral.py reading the system prompt from prompts/
     status: completed
   - id: embeddings
-    content: Implement lazy SentenceTransformer loader + Matryoshka 1536-dim truncation in backend/ingestion/embeddings.py
+    content: Implement lazy SentenceTransformer loader + Matryoshka 1536-dim truncation in app/ingestion/embeddings.py
     status: completed
   - id: d1
-    content: Implement D1 insert_receipt (RETURNING id), batched insert_items, and update_image_url with $->cents conversion in backend/ingestion/d1.py
+    content: Implement D1 insert_receipt (RETURNING id), batched insert_items, and update_image_url with $->cents conversion in app/ingestion/d1.py
     status: completed
   - id: vectorize
-    content: Implement Vectorize upsert with metadata {receipt_id:int, store_name:str, date:str} in backend/ingestion/vectorize.py and fix the date metadata field type in config.toml from number to string
+    content: Implement Vectorize upsert with metadata {receipt_id:int, store_name:str, date:str} in app/ingestion/vectorize.py and fix the date metadata field type in config.toml from number to string
     status: completed
   - id: tigris
-    content: Implement Tigris three-artifact upload (image preserving original ext, ocr.json, summary.txt) in backend/ingestion/tigris.py
+    content: Implement Tigris three-artifact upload (image preserving original ext, ocr.json, summary.txt) in app/ingestion/tigris.py
     status: completed
   - id: observability
-    content: Configure loguru with image_id-bound format, Stopwatch CM, Logfire init, and bind_image helper in backend/ingestion/observability.py without breaking the existing utils/logger.py callers
+    content: Configure loguru with image_id-bound format, Stopwatch CM, Logfire init, and bind_image helper in app/ingestion/observability.py without breaking the existing utils/logger.py callers
     status: completed
   - id: canonical_log
-    content: Define CanonicalLog Pydantic model and writer to backend/logs/<id>.json in backend/ingestion/canonical_log.py
+    content: Define CanonicalLog Pydantic model and writer to app/logs/<id>.json in app/ingestion/canonical_log.py
     status: completed
   - id: image_source
-    content: Define source-agnostic ImageInput value object and ImageSource protocol in backend/ingestion/sources/__init__.py; implement DiskImageSource (iter directory) and from_upload (single image bytes) so both batch CLI and runtime upload share the same pipeline entry
+    content: Define source-agnostic ImageInput value object and ImageSource protocol in app/ingestion/sources/__init__.py; implement DiskImageSource (iter directory) and from_upload (single image bytes) so both batch CLI and runtime upload share the same pipeline entry
     status: completed
   - id: context
     content: Define IngestionContext (config, cf_client, s3_client, rate_limiter, embedding model handle, account_id) and a build_context() factory that any caller (CLI, FastAPI app, tests) instantiates once and reuses
     status: completed
   - id: orchestrator
-    content: "Implement source-agnostic ingest_one(image: ImageInput, ctx: IngestionContext) -> IngestionResult in backend/ingestion/pipeline.py with span-wrapped steps, accumulated retry/timing/token stats, and canonical log on both success and failure"
+    content: "Implement source-agnostic ingest_one(image: ImageInput, ctx: IngestionContext) -> IngestionResult in app/ingestion/pipeline.py with span-wrapped steps, accumulated retry/timing/token stats, and canonical log on both success and failure"
     status: completed
   - id: cli_driver
-    content: "backend/ingest_receipts.py is now a thin CLI: builds context once, instantiates DiskImageSource over knowledge-base/receipts/images, calls ingest_one per ImageInput; supports --image for single-file smoke test"
+    content: "app/ingest_receipts.py is now a thin CLI: builds context once, instantiates DiskImageSource over knowledge-base/receipts/images, calls ingest_one per ImageInput; supports --image for single-file smoke test"
     status: pending
   - id: config
-    content: Add a new [ingestion] section to config.toml carrying every knob (gemini_model, mistral_model, gemini_rpm, max_ocr_retries, retry_backoff_seconds, retry_backoff_strategy, sum_tolerance_pct, embedding_model, embedding_dim, prompts_dir, logs_dir, receipts_image_dir, dry_run); add matching IngestionConfig pydantic type; fix vectorize_index_metadata_field_types[date]; gitignore backend/logs/
+    content: Add a new [ingestion] section to config.toml carrying every knob (gemini_model, mistral_model, gemini_rpm, max_ocr_retries, retry_backoff_seconds, retry_backoff_strategy, sum_tolerance_pct, embedding_model, embedding_dim, prompts_dir, logs_dir, receipts_image_dir, dry_run); add matching IngestionConfig pydantic type; fix vectorize_index_metadata_field_types[date]; gitignore app/logs/
     status: completed
   - id: logfire_bootstrap
-    content: Read Logfire token from ~/.logfire/default.toml, write LOGFIRE_TOKEN= to backend/.env if missing (no overwrite if already present), update backend/.env.example to list LOGFIRE_TOKEN with a comment about the source
+    content: Read Logfire token from ~/.logfire/default.toml, write LOGFIRE_TOKEN= to app/.env if missing (no overwrite if already present), update app/.env.example to list LOGFIRE_TOKEN with a comment about the source
     status: completed
   - id: tests
-    content: "Add backend/tests/test_ingestion_*.py covering: schema validation (happy path, missing required, sum mismatch >5% and ~5% boundary, future date), money_to_cents reuse, D1 insert SQL generation (single row + batch + variable cap math), GeminiRateLimiter (no-sleep first call, sleeps to MIN_INTERVAL on second, monotonic-clock based, fake-clock injection), Stopwatch CM populates dict, CanonicalLog model serialization shape matches spec, prompts loader, embedding MRL truncation length only (mock SentenceTransformer; no model load in CI), DiskImageSource yields ImageInput from a tmp_path with a fixture jpg"
+    content: "Add app/tests/test_ingestion_*.py covering: schema validation (happy path, missing required, sum mismatch >5% and ~5% boundary, future date), money_to_cents reuse, D1 insert SQL generation (single row + batch + variable cap math), GeminiRateLimiter (no-sleep first call, sleeps to MIN_INTERVAL on second, monotonic-clock based, fake-clock injection), Stopwatch CM populates dict, CanonicalLog model serialization shape matches spec, prompts loader, embedding MRL truncation length only (mock SentenceTransformer; no model load in CI), DiskImageSource yields ImageInput from a tmp_path with a fixture jpg"
     status: completed
   - id: logging_discipline
     content: "Sprinkle log.debug for: extracted JSON before validation (truncated), each retry attempt with reason, computed cents values, Tigris keys being uploaded, vector dimension after MRL truncation, sleep duration in rate limiter. Sprinkle log.info for: starting receipt N of M, OCR succeeded after K retries, summary length, receipt_id assigned, vector upserted, image_url written back, total elapsed seconds. All logs use the image_id-bound logger."
     status: completed
   - id: deps
-    content: uv add pillow and httpx in backend/, then uv sync
+    content: uv add pillow and httpx in app/, then uv sync
     status: completed
   - id: smoke
     content: Run unit tests with `uv run pytest -q` (must pass with zero network). Then ONE end-to-end smoke run with `--dry-run` flag (skips D1, Vectorize, Tigris writes; stubs receipt_id=0) over a single receipt to verify Gemini+Mistral+embedding wiring and canonical log output. Do NOT run full batch.
@@ -101,10 +101,10 @@ flowchart TD
 
 ## File Layout
 
-The `backend/ingestion/` package is the reusable library. `backend/ingest_receipts.py` is just one of many possible callers (a future FastAPI handler is another).
+The `app/ingestion/` package is the reusable library. `app/ingest_receipts.py` is just one of many possible callers (a future FastAPI handler is another).
 
 ```
-backend/
+app/
   ingest_receipts.py            # CLI caller (batch over disk)
   ingestion/
     __init__.py                 # re-exports ingest_one, IngestionContext, ImageInput, build_context
@@ -134,20 +134,20 @@ backend/
 
 Notes on each file:
 
-- [backend/ingestion/schemas.py](backend/ingestion/schemas.py) — `ReceiptItem` and `Receipt` Pydantic models. `Receipt` validator raises `ValueError` on `sum(items.total_price) != subtotal ±5%`, future-dated `date`, and negative amounts.
-- [backend/ingestion/prompts.py](backend/ingestion/prompts.py) — reads markdown from `backend/prompts/` and caches it; one function per prompt name.
-- [backend/ingestion/gemini.py](backend/ingestion/gemini.py) — `extract_receipt(image: ImageInput, ctx: IngestionContext) -> (Receipt, RetryStats, TokenStats)` using `pydantic-ai` `Agent`. `output_type=Receipt` + `ModelRetry` handles the schema/sum-check retry loop natively, bounded by `MAX_OCR_RETRIES = 3`.
-- [backend/ingestion/mistral.py](backend/ingestion/mistral.py) — `summarise(receipt: Receipt, ctx: IngestionContext) -> (str, TokenStats)` using a separate `pydantic-ai` `Agent` against the gateway's Mistral route.
-- [backend/ingestion/rate_limit.py](backend/ingestion/rate_limit.py) — `GeminiRateLimiter`. Lives on the `IngestionContext` so a long-running FastAPI process shares one rate limiter across requests, not a fresh one per call.
-- [backend/ingestion/embeddings.py](backend/ingestion/embeddings.py) — `Embedder` class wrapping a lazy `SentenceTransformer`; instantiated once on the `IngestionContext` so the model is loaded once per process (critical for runtime latency).
-- [backend/ingestion/vectorize.py](backend/ingestion/vectorize.py) — `upsert(ctx, receipt_id, vector, store_name, date)` using the `cloudflare` SDK with metadata `{receipt_id: int, store_name: str, date: str}`.
-- [backend/ingestion/d1.py](backend/ingestion/d1.py) — `insert_receipt(ctx, ...) -> int`, `insert_items(ctx, receipt_id, items)`, `update_image_url(ctx, receipt_id, url)`. Mirrors the style in [backend/ingest_kb.py](backend/ingest_kb.py).
-- [backend/ingestion/tigris.py](backend/ingestion/tigris.py) — `upload_artifacts(ctx, receipt_id, image: ImageInput, raw_json, summary) -> image_url`. Writes three keys: `{rid}/{rid}-image.{ext}`, `{rid}/{rid}-ocr.json`, `{rid}/{rid}-summary.txt`.
-- [backend/ingestion/observability.py](backend/ingestion/observability.py) — `bind_image(image_id)`, `Stopwatch`, `configure_logging()`, `configure_logfire()`.
-- [backend/ingestion/canonical_log.py](backend/ingestion/canonical_log.py) — `CanonicalLog` model + writer to `logs/<receipt_id_or_image_id>.json`.
-- [backend/ingestion/result.py](backend/ingestion/result.py) — `IngestionResult` (return type for runtime callers — see below).
+- [app/ingestion/schemas.py](app/ingestion/schemas.py) — `ReceiptItem` and `Receipt` Pydantic models. `Receipt` validator raises `ValueError` on `sum(items.total_price) != subtotal ±5%`, future-dated `date`, and negative amounts.
+- [app/ingestion/prompts.py](app/ingestion/prompts.py) — reads markdown from `app/prompts/` and caches it; one function per prompt name.
+- [app/ingestion/gemini.py](app/ingestion/gemini.py) — `extract_receipt(image: ImageInput, ctx: IngestionContext) -> (Receipt, RetryStats, TokenStats)` using `pydantic-ai` `Agent`. `output_type=Receipt` + `ModelRetry` handles the schema/sum-check retry loop natively, bounded by `MAX_OCR_RETRIES = 3`.
+- [app/ingestion/mistral.py](app/ingestion/mistral.py) — `summarise(receipt: Receipt, ctx: IngestionContext) -> (str, TokenStats)` using a separate `pydantic-ai` `Agent` against the gateway's Mistral route.
+- [app/ingestion/rate_limit.py](app/ingestion/rate_limit.py) — `GeminiRateLimiter`. Lives on the `IngestionContext` so a long-running FastAPI process shares one rate limiter across requests, not a fresh one per call.
+- [app/ingestion/embeddings.py](app/ingestion/embeddings.py) — `Embedder` class wrapping a lazy `SentenceTransformer`; instantiated once on the `IngestionContext` so the model is loaded once per process (critical for runtime latency).
+- [app/ingestion/vectorize.py](app/ingestion/vectorize.py) — `upsert(ctx, receipt_id, vector, store_name, date)` using the `cloudflare` SDK with metadata `{receipt_id: int, store_name: str, date: str}`.
+- [app/ingestion/d1.py](app/ingestion/d1.py) — `insert_receipt(ctx, ...) -> int`, `insert_items(ctx, receipt_id, items)`, `update_image_url(ctx, receipt_id, url)`. Mirrors the style in [app/ingest_kb.py](app/ingest_kb.py).
+- [app/ingestion/tigris.py](app/ingestion/tigris.py) — `upload_artifacts(ctx, receipt_id, image: ImageInput, raw_json, summary) -> image_url`. Writes three keys: `{rid}/{rid}-image.{ext}`, `{rid}/{rid}-ocr.json`, `{rid}/{rid}-summary.txt`.
+- [app/ingestion/observability.py](app/ingestion/observability.py) — `bind_image(image_id)`, `Stopwatch`, `configure_logging()`, `configure_logfire()`.
+- [app/ingestion/canonical_log.py](app/ingestion/canonical_log.py) — `CanonicalLog` model + writer to `logs/<receipt_id_or_image_id>.json`.
+- [app/ingestion/result.py](app/ingestion/result.py) — `IngestionResult` (return type for runtime callers — see below).
 
-## Source-agnostic image input ([backend/ingestion/sources/__init__.py](backend/ingestion/sources/__init__.py))
+## Source-agnostic image input ([app/ingestion/sources/__init__.py](app/ingestion/sources/__init__.py))
 
 ```python
 class ImageInput(BaseModel):
@@ -163,14 +163,14 @@ class ImageSource(Protocol):
 
 Two concrete sources:
 
-- [backend/ingestion/sources/disk.py](backend/ingestion/sources/disk.py)
+- [app/ingestion/sources/disk.py](app/ingestion/sources/disk.py)
   ```python
   class DiskImageSource:
       def __init__(self, directory: Path, *, sort: bool = True): ...
       def __iter__(self) -> Iterator[ImageInput]:
           # image_id = file stem ("receipt1"); extension = file suffix; content_type from mimetypes
   ```
-- [backend/ingestion/sources/upload.py](backend/ingestion/sources/upload.py)
+- [app/ingestion/sources/upload.py](app/ingestion/sources/upload.py)
   ```python
   def from_upload(filename: str, content_type: str, data: bytes) -> ImageInput:
       # image_id = f"upload-{uuid4().hex[:8]}"; preserves filename in display_name
@@ -186,7 +186,7 @@ async def upload_receipt(file: UploadFile, ctx: IngestionContext = Depends(get_c
     return result.public_payload()  # receipt_id, summary, image_url, validation
 ```
 
-## IngestionContext ([backend/ingestion/context.py](backend/ingestion/context.py))
+## IngestionContext ([app/ingestion/context.py](app/ingestion/context.py))
 
 Holds everything a step needs that is expensive to construct or must be shared:
 
@@ -208,7 +208,7 @@ def build_context(config_path: str = "config.toml") -> IngestionContext:
 
 Importantly: `gemini_agent`, `mistral_agent`, `embedder`, and `rate_limiter` are constructed once. The CLI builds one context and reuses it across all 37 receipts; a FastAPI app builds one at startup (`@app.on_event("startup")` or a lifespan) and reuses it across all requests. No step constructs heavy objects on its own.
 
-## Orchestrator ([backend/ingestion/pipeline.py](backend/ingestion/pipeline.py))
+## Orchestrator ([app/ingestion/pipeline.py](app/ingestion/pipeline.py))
 
 A single source-agnostic function that both callers share:
 
@@ -271,7 +271,7 @@ class IngestionResult(BaseModel):
     def public_payload(self) -> dict: ...   # subset safe to return from a public API
 ```
 
-## Pydantic schemas (`backend/ingestion/schemas.py`)
+## Pydantic schemas (`app/ingestion/schemas.py`)
 
 ```python
 class ReceiptItem(BaseModel):
@@ -309,7 +309,7 @@ The validator failure message is what `pydantic-ai`'s `ModelRetry` injects back 
 
 ## $ → cents conversion at the D1 boundary
 
-Reuse the same `Decimal * 100, ROUND_HALF_UP` pattern as `money_to_cents` in [backend/ingest_kb.py](backend/ingest_kb.py). Computed in `d1.py` immediately before binding the SQL params:
+Reuse the same `Decimal * 100, ROUND_HALF_UP` pattern as `money_to_cents` in [app/ingest_kb.py](app/ingest_kb.py). Computed in `d1.py` immediately before binding the SQL params:
 
 - `subtotal_cents = to_cents(receipt.subtotal)` (None-safe)
 - `gst_cents`, `discounts_cents` likewise
@@ -327,7 +327,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id;
 ```
 
-Then `insert_items` builds a single multi-row insert (same pattern as `prepare_insert` in [backend/ingest_kb.py](backend/ingest_kb.py)), capped at the 100-variable D1 limit; `receipt_items` has 6 bound columns, so batch size = `100 // 6 = 16`. After Tigris upload, `update_image_url` runs an `UPDATE receipts SET image_url = ? WHERE id = ?`.
+Then `insert_items` builds a single multi-row insert (same pattern as `prepare_insert` in [app/ingest_kb.py](app/ingest_kb.py)), capped at the 100-variable D1 limit; `receipt_items` has 6 bound columns, so batch size = `100 // 6 = 16`. After Tigris upload, `update_image_url` runs an `UPDATE receipts SET image_url = ? WHERE id = ?`.
 
 ## Rate limiting (Gemini-only, 5 RPM)
 
@@ -360,7 +360,7 @@ Then construct an OpenAI-compat model in `pydantic-ai`:
 
 The OpenAI api_key passed to pydantic-ai is a placeholder (BYOK keys live in the gateway). Image is sent as a base64 data URL in the user message; receipt schema is supplied via `output_type=Receipt`.
 
-## Local embedding (`backend/ingestion/embeddings.py`)
+## Local embedding (`app/ingestion/embeddings.py`)
 
 ```python
 _model: SentenceTransformer | None = None
@@ -375,7 +375,7 @@ def embed(text: str) -> list[float]:
     return vec[:1536].tolist()  # Matryoshka truncation
 ```
 
-Model identifier is read from `config.cloudflare.vectorize_embedding_model` (already present in [backend/config.toml](backend/config.toml)).
+Model identifier is read from `config.cloudflare.vectorize_embedding_model` (already present in [app/config.toml](app/config.toml)).
 
 ## Vectorize upsert
 
@@ -394,7 +394,7 @@ Note: `config.toml` currently lists `vectorize_index_metadata_field_types = ["nu
 
 ## Tigris upload
 
-`boto3` client constructed identically to [backend/setup.py](backend/setup.py). For each receipt:
+`boto3` client constructed identically to [app/setup.py](app/setup.py). For each receipt:
 
 - `put_object(Bucket, Key=f"{rid}/{rid}-image{ext}", Body=image_bytes, ContentType="image/jpeg")`
 - `put_object(Key=f"{rid}/{rid}-ocr.json", Body=receipt.model_dump_json(indent=2), ContentType="application/json")`
@@ -414,7 +414,7 @@ logger.add(sys.stderr,
            level=cfg.log_level)
 ```
 
-Then `def bind_image(image_id): return logger.bind(image_id=image_id)` returns a per-image bound logger that is passed down through every step. Existing call sites in [backend/utils/logger.py](backend/utils/logger.py) get a default `image_id="-"` via `logger.configure(extra={"image_id": "-"})` so the Splitwise importer keeps working.
+Then `def bind_image(image_id): return logger.bind(image_id=image_id)` returns a per-image bound logger that is passed down through every step. Existing call sites in [app/utils/logger.py](app/utils/logger.py) get a default `image_id="-"` via `logger.configure(extra={"image_id": "-"})` so the Splitwise importer keeps working.
 
 **Per-step timing.** A `Stopwatch` context manager populates a `dict[str, float]` keyed by step name (`ocr`, `summary`, `db_insert`, `embedding`, `vectorize_upsert`, `tigris_upload`). The pipeline driver wraps each step in this CM and accumulates the dict.
 
@@ -451,7 +451,7 @@ Token totals are pulled from the `usage` returned by `agent.run_sync(...).usage`
 - D1 insert fails → log failure canonical, abort that receipt, no Vectorize/Tigris writes.
 - Vectorize or Tigris fails → receipt row stays in D1 (per [docs/ingestion.md](docs/ingestion.md)), canonical log marks `outcome=failure` with the failing step in `error`, but the receipt row is not rolled back; flagged for manual reconciliation.
 
-## CLI caller ([backend/ingest_receipts.py](backend/ingest_receipts.py))
+## CLI caller ([app/ingest_receipts.py](app/ingest_receipts.py))
 
 The CLI is now a thin shell — it just picks the source and reuses the same `ingest_one` the runtime path will call:
 
@@ -471,9 +471,9 @@ def main():
 
 No pipeline logic lives in this file — moving from batch CLI to a runtime API requires zero changes to `ingestion/`.
 
-## All knobs live in [backend/config.toml](backend/config.toml)
+## All knobs live in [app/config.toml](app/config.toml)
 
-No magic numbers in code. Every tunable goes into a new `[ingestion]` section, surfaced via a new `IngestionConfig` pydantic type added to [backend/utils/types.py](backend/utils/types.py) and wired through `Config` in [backend/utils/config.py](backend/utils/config.py).
+No magic numbers in code. Every tunable goes into a new `[ingestion]` section, surfaced via a new `IngestionConfig` pydantic type added to [app/utils/types.py](app/utils/types.py) and wired through `Config` in [app/utils/config.py](app/utils/config.py).
 
 ```toml
 [ingestion]
@@ -526,14 +526,14 @@ def wait(self, log) -> None:
 
 ## Logfire token bootstrap
 
-`backend/ingestion/observability.configure_logfire()` does the following at process start:
+`app/ingestion/observability.configure_logfire()` does the following at process start:
 
 1. If `LOGFIRE_TOKEN` is already in env, use it.
 2. Otherwise read `~/.logfire/default.toml`, parse the first `[tokens.*]` table, extract `token`.
-3. If found and `backend/.env` does not already define `LOGFIRE_TOKEN`, append `LOGFIRE_TOKEN=<token>` to `backend/.env` (so subsequent runs are deterministic without re-reading `~/.logfire`).
+3. If found and `app/.env` does not already define `LOGFIRE_TOKEN`, append `LOGFIRE_TOKEN=<token>` to `app/.env` (so subsequent runs are deterministic without re-reading `~/.logfire`).
 4. Pass the token to `logfire.configure(token=...)` and call `logfire.instrument_pydantic_ai()`.
 
-`backend/.env.example` adds:
+`app/.env.example` adds:
 
 ```dotenv
 # Pydantic Logfire write token. Auto-bootstrapped from ~/.logfire/default.toml on first run
@@ -575,22 +575,22 @@ The Splitwise importer keeps working because `configure_logging()` calls `logger
 - Still compute the embedding (no network).
 - **Skip** `insert_receipt` / `insert_items` and stub `receipt_id = 0`. Log `info("dry-run: skipping D1 insert")`.
 - **Skip** `upsert_vector`. Log `info("dry-run: skipping Vectorize upsert (vec dim={dim})")`.
-- **Skip** `upload_artifacts` and `update_image_url`. Log `info("dry-run: skipping Tigris upload")` and write the artifacts that would have been uploaded to `backend/logs/dry-run/{image_id}/` so they are inspectable locally.
-- Still write a canonical log to `backend/logs/{image_id}.json` with `outcome="success"` and a `dry_run: true` flag in the model so we can grep for them.
+- **Skip** `upload_artifacts` and `update_image_url`. Log `info("dry-run: skipping Tigris upload")` and write the artifacts that would have been uploaded to `app/logs/dry-run/{image_id}/` so they are inspectable locally.
+- Still write a canonical log to `app/logs/{image_id}.json` with `outcome="success"` and a `dry_run: true` flag in the model so we can grep for them.
 
 This is what the smoke test uses. It guarantees we never pollute D1 or Vectorize during development.
 
 ## Dependencies
 
-Added via `cd backend && uv add ...`:
+Added via `cd app/ && uv add ...`:
 - `pillow` (read image bytes, get format/extension)
 - `httpx` (already transitively available via pydantic-ai but make explicit for the gateway client)
 
-`pydantic-ai`, `logfire`, `loguru`, `cloudflare`, `boto3`, `sentence-transformers` are already in [backend/pyproject.toml](backend/pyproject.toml).
+`pydantic-ai`, `logfire`, `loguru`, `cloudflare`, `boto3`, `sentence-transformers` are already in [app/pyproject.toml](app/pyproject.toml).
 
-## Tests ([backend/tests/](backend/tests))
+## Tests ([app/tests/](app/tests))
 
-Following the convention already set by [backend/tests/test_ingest_kb.py](backend/tests/test_ingest_kb.py): pytest, no network. Each new module gets its own `test_ingestion_<module>.py`.
+Following the convention already set by [app/tests/test_ingest_kb.py](app/tests/test_ingest_kb.py): pytest, no network. Each new module gets its own `test_ingestion_<module>.py`.
 
 - `test_ingestion_schemas.py`
   - happy path: full Receipt parses
@@ -603,7 +603,7 @@ Following the convention already set by [backend/tests/test_ingest_kb.py](backen
   - negative `total_price` on an item raises
   - `Receipt.model_validate_json` round-trip of a known-good fixture in `tests/fixtures/receipt.json`
 - `test_ingestion_d1.py`
-  - `to_cents` matches `money_to_cents` from [backend/ingest_kb.py](backend/ingest_kb.py) for the same set of strings
+  - `to_cents` matches `money_to_cents` from [app/ingest_kb.py](app/ingest_kb.py) for the same set of strings
   - `total_cents = subtotal - discounts + gst` is computed correctly with various None combinations
   - `build_receipt_insert_sql()` returns a single-row INSERT with `RETURNING id` and the right column order/placeholders
   - `build_items_insert_sql(rows)` produces a multi-row insert and respects the D1 100-variable limit (batch size = 100 // 6 = 16); fed 17 rows produces 2 batches
@@ -641,23 +641,23 @@ CI guideline: tests must run with no network access and no real model load. The 
 The design is "good" only if all of these are true after the work lands:
 
 - `ingest_one` takes only `(ImageInput, IngestionContext)` — no `Path`, no filesystem, no `argparse`, no FastAPI types.
-- Adding a new source (e.g. an SQS queue, an HTTP webhook, a unit test fixture) requires only a new file under `backend/ingestion/sources/` that yields `ImageInput`s. Nothing else changes.
+- Adding a new source (e.g. an SQS queue, an HTTP webhook, a unit test fixture) requires only a new file under `app/ingestion/sources/` that yields `ImageInput`s. Nothing else changes.
 - `build_context()` is called once per process. The CLI proves this with one call; a future FastAPI app proves it with a lifespan event.
 - The embedding model, Gemini agent, Mistral agent, and rate limiter are not constructed inside any per-request/per-image function.
 - `ingest_one` always returns an `IngestionResult` and always writes a canonical log, even on failure — runtime callers never have to wrap it in their own try/except for log hygiene.
-- Every tunable lives in [backend/config.toml](backend/config.toml) under `[ingestion]`. Grep for hardcoded numeric literals (`5`, `12`, `1536`, `3`, etc.) in `ingestion/` should return nothing meaningful.
+- Every tunable lives in [app/config.toml](app/config.toml) under `[ingestion]`. Grep for hardcoded numeric literals (`5`, `12`, `1536`, `3`, etc.) in `ingestion/` should return nothing meaningful.
 
 ## Verification (per AGENTS.md "Before Finishing Work")
 
-- `cd backend && uv sync`
-- `cd backend && uv run pytest -q` — must pass with zero network and zero real model loads.
+- `cd app/ && uv sync`
+- `cd app/ && uv run pytest -q` — must pass with zero network and zero real model loads.
 - ONE end-to-end smoke run in dry-run mode:
   ```sh
-  cd backend
+  cd app/
   uv run python ingest_receipts.py --image ../knowledge-base/receipts/images/receipt1.jpg --dry-run
   ```
   This exercises Gemini, Mistral, embedding, canonical log, and Logfire spans without touching D1, Vectorize, or Tigris.
-- Inspect `backend/logs/receipt1.json` to confirm canonical log shape matches the spec and `dry_run: true` is set.
+- Inspect `app/logs/receipt1.json` to confirm canonical log shape matches the spec and `dry_run: true` is set.
 - Inspect Logfire dashboard for `ingest.*` spans, token counts, and per-attempt errors.
-- Confirm `LOGFIRE_TOKEN` was bootstrapped into `backend/.env`.
+- Confirm `LOGFIRE_TOKEN` was bootstrapped into `app/.env`.
 - **Do NOT run the full batch over 37 images.** No real D1, Vectorize, or Tigris writes happen until the user explicitly says so.

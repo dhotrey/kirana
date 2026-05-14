@@ -6,7 +6,11 @@ from datetime import date
 import pytest
 
 from ingestion.vectorize import vectorize_date_value
-from tools.vectorize import extract_vectorize_matches, validate_vectorize_filter
+from tools.vectorize import (
+    build_vectorize_tools,
+    extract_vectorize_matches,
+    validate_vectorize_filter,
+)
 from utils.types import (
     CloudflareConfig,
     Config,
@@ -28,6 +32,7 @@ def _cfg() -> Config:
             d1_database_name="kirana",
             ai_gateway_name="kirana-ai-gateway",
             vectorize_index_name="kirana-reciept-summaries",
+            vectorize_item_index_name="kirana-receipt-items",
             vectorize_embedding_model="qwen3-vl-embedding-2b",
             vectorize_index_dimension=1536,
             vectorize_index_metadata_fields=["receipt_id", "store_name", "date"],
@@ -126,6 +131,31 @@ def test_extract_vectorize_matches_normalizes_cloudflare_match_shape():
 
 def test_kirana_config_has_vector_search_top_k_default():
     assert KiranaConfig(log_level="DEBUG").receipt_vector_search_top_k == 8
+
+
+def test_cloudflare_config_has_item_index_metadata_defaults():
+    cfg = _cfg().cloudflare
+
+    assert cfg.vectorize_item_index_name == "kirana-receipt-items"
+    assert cfg.vectorize_item_index_metadata_fields == ["item_name"]
+    assert cfg.vectorize_item_index_metadata_field_types == ["string"]
+
+
+def test_build_vectorize_tools_includes_item_search_tool():
+    tool_names = {tool.name for tool in build_vectorize_tools(_cfg(), {})}
+
+    assert "search_item_vectors" in tool_names
+
+
+def test_kirana_config_has_image_match_threshold_default():
+    assert KiranaConfig(log_level="DEBUG").receipt_image_match_threshold == 0.5
+
+
+def test_ingestion_config_has_image_embedding_defaults():
+    cfg = _cfg().ingestion
+
+    assert cfg.embedding_image_max_dimension == 256
+    assert cfg.embedding_device is None
 
 
 def test_vectorize_date_value_uses_yyyymmdd_number():
