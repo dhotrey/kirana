@@ -8,6 +8,7 @@ class KiranaConfig(pydantic.BaseModel):
     model_identifiers: dict[str, str] = pydantic.Field(default_factory=dict)
     chat_db_path: str = "db.sqlite"
     chat_log_file: str = "logs/chat.log"
+    receipt_vector_search_top_k: int = pydantic.Field(default=8, ge=1, le=100)
 
     @pydantic.model_validator(mode="after")
     def validate_model_aliases(self) -> "KiranaConfig":

@@ -1,16 +1,16 @@
 # Setup
 
-The backend setup script provisions the remote infrastructure used by the local Kirana prototype. Run it from `backend/` after installing dependencies with `uv`.
+The app setup script provisions the remote infrastructure used by the local Kirana prototype. Run it from `app/` after installing dependencies with `uv`.
 
 ```sh
-cd backend
+cd app
 uv sync
 uv run python setup.py
 ```
 
 ## Required `.env`
 
-Create `backend/.env` with:
+Create `app/.env` with:
 
 ```dotenv
 CLOUDFLARE_API_TOKEN=<cloudflare-api-token>
@@ -33,12 +33,12 @@ KIRANA_DB_ID=<d1-database-id>
 - `CLOUDFLARE_API_TOKEN`: Cloudflare dashboard -> My Profile -> API Tokens. The token needs access to create/manage D1, Vectorize, and AI Gateway resources for the account.
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare dashboard -> account page/sidebar, or the account URL in the dashboard.
 - `CLOUDFLARE_AI_GATEWAY_API_TOKEN`: Cloudflare AI Gateway authentication token created from the gateway settings page after `setup.py` creates the gateway.
-- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Tigris dashboard access keys. The setup uses Tigris' S3-compatible API endpoint from `backend/config.toml`.
+- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Tigris dashboard access keys. The setup uses Tigris' S3-compatible API endpoint from `app/config.toml`.
 - `KIRANA_DB_ID`: Cloudflare D1 database UUID. Leave unset for a fresh setup; the script creates the D1 database and appends the generated ID to `.env`.
 
 ## Resources Created
 
-The concrete resource names are defined in `backend/config.toml`.
+The concrete resource names are defined in `app/config.toml`.
 
 ### Cloudflare D1
 
@@ -70,7 +70,7 @@ Creates metadata indices used for filtering and joining retrieved vectors back t
 - `store_name` as `string`
 - `date` as `number`
 
-`receipt_id` is the main join key back to D1 receipts and to the corresponding object filename.
+`receipt_id` is the main join key back to D1 receipts and to the corresponding object filename. `date` is stored as a numeric `YYYYMMDD` value, for example `20260415`, so Vectorize range filters can use numeric comparisons such as `{"date": {"$gte": 20260401, "$lt": 20260501}}`.
 
 ### Cloudflare AI Gateway
 
@@ -86,7 +86,7 @@ After the script creates the gateway, finish the AI Gateway setup in the Cloudfl
 4. Go to the gateway settings page.
 5. Select Create authentication token. Use a token with the required AI Gateway `Run` permission.
 6. Copy the token immediately; Cloudflare will not show it again.
-7. Add it to `backend/.env` as `CLOUDFLARE_AI_GATEWAY_API_TOKEN`.
+7. Add it to `app/.env` as `CLOUDFLARE_AI_GATEWAY_API_TOKEN`.
 8. Toggle on Authenticated Gateway.
 
 When Authenticated Gateway is enabled, requests must include:

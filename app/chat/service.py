@@ -31,7 +31,7 @@ from chat.gateway import build_chat_model, model_routes_via_gemini
 from chat.schemas import ChatMessage, ChatMessageStats, Conversation
 from ingestion.prompts import load_prompt
 from ingestion.rate_limit import GeminiRateLimiter
-from tools import build_finance_tools
+from tools import build_finance_tools, build_vectorize_tools
 from utils.db.d1 import D1Database
 from utils.observability import logfire_enabled
 from utils.types import Config
@@ -290,7 +290,10 @@ class ChatService:
         self.d1 = d1
         self.rate_limiter = GeminiRateLimiter(cfg.ingestion.gemini_min_interval_seconds)
         self._models: dict[str, Any] = {}
-        self._tools: list[Any] = build_finance_tools(d1)
+        self._tools: list[Any] = [
+            *build_finance_tools(d1),
+            *build_vectorize_tools(cfg),
+        ]
         self._tool_by_name = {tool.name: tool for tool in self._tools}
         self.graph = self._build_graph()
 
@@ -646,49 +649,58 @@ class ChatService:
         retry_callback: RateLimitRetryCallback | None,
     ) -> AIMessage:
         base_messages = [SystemMessage(content=self._system_prompt()), *state["messages"]]
+        messages: list[BaseMessage] = list(base_messages)
         model = self._model(model_name)
         model_identifier = self.cfg.kirana.model_identifiers[model_name]
-        tool_request = await _invoke_model_with_rate_limit_retry(
-            model.bind_tools(self._tools),
-            base_messages,
-            model_name=model_name,
-            model_identifier=model_identifier,
-            call_name="gemini_tool_request",
-            retry_callback=retry_callback,
-        )
-        tool_calls = getattr(tool_request, "tool_calls", []) or []
-        if not tool_calls:
-            return tool_request
-
         tool_names: list[str] = []
-        tool_result_lines: list[str] = []
-        for tool_call in tool_calls:
-            if not isinstance(tool_call, dict):
-                continue
-            name = tool_call.get("name")
-            args = tool_call.get("args") or {}
-            if not isinstance(name, str) or name not in self._tool_by_name:
-                continue
-            if not isinstance(args, dict):
-                args = {"input": args}
-            result = await self._tool_by_name[name].ainvoke(args)
-            tool_names.append(name)
-            tool_result_lines.append(f"{name}({args}) -> {result}")
+        for tool_round in range(3):
+            tool_request = await _invoke_model_with_rate_limit_retry(
+                model.bind_tools(self._tools),
+                messages,
+                model_name=model_name,
+                model_identifier=model_identifier,
+                call_name=f"gemini_tool_request_{tool_round + 1}",
+                retry_callback=retry_callback,
+            )
+            tool_calls = getattr(tool_request, "tool_calls", []) or []
+            if not tool_calls:
+                tool_request.additional_kwargs = {
+                    **getattr(tool_request, "additional_kwargs", {}),
+                    "kirana_tool_names": tool_names,
+                }
+                return tool_request
 
-        if not tool_result_lines:
-            return tool_request
+            messages.append(tool_request)
+            tool_messages: list[ToolMessage] = []
+            for tool_call in tool_calls:
+                if not isinstance(tool_call, dict):
+                    continue
+                name = tool_call.get("name")
+                args = tool_call.get("args") or {}
+                tool_call_id = str(tool_call.get("id") or f"kirana_tool_{len(tool_names)}")
+                if not isinstance(name, str) or name not in self._tool_by_name:
+                    continue
+                if not isinstance(args, dict):
+                    args = {"input": args}
+                result = await self._tool_by_name[name].ainvoke(args)
+                tool_names.append(name)
+                tool_messages.append(
+                    ToolMessage(content=str(result), name=name, tool_call_id=tool_call_id)
+                )
+            if not tool_messages:
+                return tool_request
+            messages.extend(tool_messages)
 
         synthesis_prompt = HumanMessage(
             content=(
                 "Use these tool results to answer the user's latest question. "
                 "Do not call another tool. Keep the answer concise and cite the "
-                "date range or SQL-derived basis when relevant.\n\n"
-                + "\n".join(tool_result_lines)
+                "date range, Vectorize receipt IDs, or SQL-derived basis when relevant."
             )
         )
         final_response = await _invoke_model_with_rate_limit_retry(
             model,
-            [*base_messages, synthesis_prompt],
+            [*messages, synthesis_prompt],
             model_name=model_name,
             model_identifier=model_identifier,
             call_name="gemini_synthesis",

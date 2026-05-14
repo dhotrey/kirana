@@ -4,7 +4,7 @@
 
 Kirana ingestion is a set of local, explicitly-run flows that populate the grocery finance knowledge base. The receipt image flow and the Splitwise CSV import are part of the same ingestion boundary, but they are executed independently:
 
-- Receipt images run through `backend/ingest_receipts.py`, which extracts, validates, summarizes, embeds, stores, archives, and logs each receipt.
+- Receipt images run through `app/ingest_receipts.py`, which extracts, validates, summarizes, embeds, stores, archives, and logs each receipt.
 - Splitwise exports are imported as a separate one-shot CSV flow into D1. They do not use VLM extraction, embedding, Vectorize, or Tigris.
 
 The receipt flow writes to three persistent stores: Cloudflare D1 for structured receipt and item rows, Cloudflare Vectorize for semantic retrieval over receipt summaries, and Tigris for raw image and derived artifact archival. The pipeline runs on demand from the local machine; there is no hosted orchestrator or filesystem watcher.
@@ -13,7 +13,7 @@ The receipt flow writes to three persistent stores: Cloudflare D1 for structured
 
 ## How to Run Receipt Ingestion
 
-Run from `backend/`:
+Run from `app/`:
 
 ```sh
 uv run python ingest_receipts.py
@@ -37,7 +37,7 @@ Use a non-default config file:
 uv run python ingest_receipts.py --config config.toml
 ```
 
-`ingest_receipts.py` is intentionally thin. Most work happens in `backend/ingestion/`; the CLI owns startup, config loading, input selection, dry-run mode, and per-image orchestration.
+`ingest_receipts.py` is intentionally thin. Most work happens in `app/ingestion/`; the CLI owns startup, config loading, input selection, dry-run mode, and per-image orchestration.
 
 ---
 
@@ -136,9 +136,11 @@ The semantic summary is embedded locally using the configured Qwen embedding mod
 {
   "receipt_id": 42,
   "store_name": "woolworths-metro",
-  "date": "2026-03-15"
+  "date": 20260315
 }
 ```
+
+`date` is stored as a numeric `YYYYMMDD` value because the Vectorize metadata index is a number index. Query-time date filters should use numeric ranges, for example `{"date": {"$gte": 20260401, "$lt": 20260501}}`. The chat Vectorize search tool also normalizes ISO `YYYY-MM-DD` filter values to this numeric form before calling Cloudflare.
 
 The vector index is shared between receipt summaries and query-time pantry images, forming the cross-modal retrieval space described in the main README.
 

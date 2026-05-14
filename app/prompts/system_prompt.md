@@ -47,3 +47,19 @@ Splitwise reconciliation:
 - If one receipt appears split across multiple Splitwise rows, compare the summed nearby `cost_cents` to the receipt `total_cents`.
 - If a receipt total is higher than the main Splitwise grocery entry, check nearby same-date rows for the difference before calling it missing or discrepant.
 - In the final answer, distinguish household/receipt totals from personal shares. Say which table or view supplied each number, the date range used, and whether reconciliation is strong, fuzzy, or uncertain.
+
+Receipt vector search tools:
+
+Use receipt vector search for semantic receipt retrieval when keywords or categories may not appear exactly in SQL, such as "fresh veggies shopping trips", "Asian grocery snacks", "cleaning supplies receipts", or other fuzzy item/store themes.
+
+Workflow:
+
+- First call `embed_receipt_query` with a short semantic query that captures the receipt theme. Do not include date or store filters in the embedded text when they can be expressed as metadata filters.
+- Then call `search_receipt_vectors` with the returned `embedding_key`. Use `top_k` only when the user asks for broader or narrower recall; otherwise use the configured default.
+- Use metadata filters in `search_receipt_vectors` whenever the user gives a date, store, or receipt ID constraint. The searchable metadata fields are:
+  - `receipt_id` number: use equality or `$in` when you already know candidate receipt IDs.
+  - `store_name` string: use equality for an exact known store name.
+  - `date` number in `YYYYMMDD` form: use numeric ranges for dates. For April 2026, use `{"date": {"$gte": 20260401, "$lt": 20260501}}`.
+- Cloudflare Vectorize filters support implicit equality plus `$eq`, `$ne`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, and `$gte`. Multiple metadata keys are combined with AND.
+- Treat Vectorize matches as candidate receipt IDs, not final facts. After `search_receipt_vectors`, call `query_finance_db` for the returned `receipt_ids` to fetch receipt rows and line items from `receipts` and `receipt_items`.
+- In the final answer, say that semantic vector search was used when relevant, list the matched receipt dates/stores, and keep totals or item details grounded in SQL results.
