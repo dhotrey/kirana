@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from chat.service import _extract_tool_names_for_latest_turn
+from chat.service import (
+    RateLimitRetryEvent,
+    _extract_tool_names_for_latest_turn,
+    _invoke_model_with_rate_limit_retry,
+    _is_rate_limit_error,
+)
 
 
 def test_extract_tool_names_for_latest_turn_counts_executed_tools():
@@ -55,3 +62,53 @@ def test_extract_tool_names_for_latest_turn_reads_gemini_recorded_tools():
     ]
 
     assert _extract_tool_names_for_latest_turn(messages) == ["query_finance_db"]
+
+
+def test_is_rate_limit_error_detects_cloudflare_gateway_shape():
+    exc = Exception(
+        "Error code: 429 - {'object': 'error', 'message': 'Rate limit exceeded', "
+        "'type': 'rate_limited', 'param': None, 'code': '1300', "
+        "'raw_status_code': 429}"
+    )
+
+    assert _is_rate_limit_error(exc)
+
+
+def test_invoke_model_retries_rate_limits(monkeypatch):
+    class FakeModel:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def ainvoke(self, messages):
+            self.calls += 1
+            if self.calls <= 2:
+                raise Exception("Error code: 429 - Rate limit exceeded")
+            return AIMessage(content="ok")
+
+    sleeps: list[int] = []
+    events: list[RateLimitRetryEvent] = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    async def retry_callback(event: RateLimitRetryEvent) -> None:
+        events.append(event)
+
+    monkeypatch.setattr("chat.service.asyncio.sleep", fake_sleep)
+
+    model = FakeModel()
+    response = asyncio.run(
+        _invoke_model_with_rate_limit_retry(
+            model,
+            [HumanMessage(content="hello")],
+            model_name="test",
+            model_identifier="test-model",
+            call_name="agent",
+            retry_callback=retry_callback,
+        )
+    )
+
+    assert response.content == "ok"
+    assert model.calls == 3
+    assert sleeps == [10, 15]
+    assert [event.attempt for event in events] == [1, 2]

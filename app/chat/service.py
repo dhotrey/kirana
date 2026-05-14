@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import sqlite3
 import time
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager, nullcontext
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -36,6 +38,21 @@ from utils.types import Config
 
 TITLE_MAX_CHARS = 48
 SYSTEM_PROMPT_NAME = "system_prompt"
+RATE_LIMIT_RETRY_DELAYS_SECONDS = (10, 15, 20)
+
+
+@dataclass(frozen=True)
+class RateLimitRetryEvent:
+    attempt: int
+    delay_seconds: int
+    max_retries: int
+    call_name: str
+    model_name: str
+    model_identifier: str
+    error: str
+
+
+RateLimitRetryCallback = Callable[[RateLimitRetryEvent], Awaitable[None]]
 
 
 def _utc_now_sql() -> str:
@@ -56,6 +73,7 @@ def _message_to_schema(
     *,
     total_tat_seconds: float | None = None,
     tool_names: list[str] | None = None,
+    rate_limit_retries: int = 0,
 ) -> ChatMessage | None:
     if isinstance(message, HumanMessage):
         role = "user"
@@ -81,6 +99,7 @@ def _message_to_schema(
                 total_tokens=token_usage["total_tokens"],
                 tool_calls=len(tools),
                 tools=tools,
+                rate_limit_retries=rate_limit_retries,
             )
     return ChatMessage(role=role, content=text, stats=stats)
 
@@ -112,6 +131,96 @@ def _extract_token_usage(message: AIMessage) -> dict[str, int]:
         "output_tokens": int(output_tokens),
         "total_tokens": int(total_tokens),
     }
+
+
+def _is_rate_limit_error(exc: Exception) -> bool:
+    status_code = getattr(exc, "status_code", None)
+    if status_code == 429:
+        return True
+
+    response = getattr(exc, "response", None)
+    if getattr(response, "status_code", None) == 429:
+        return True
+
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        code = str(body.get("code") or "").lower()
+        error_type = str(body.get("type") or "").lower()
+        raw_status_code = body.get("raw_status_code")
+        if raw_status_code == 429 or code == "1300" or error_type == "rate_limited":
+            return True
+
+    text = str(exc).lower()
+    return "429" in text and (
+        "rate limit exceeded" in text or "rate_limited" in text
+    )
+
+
+async def _invoke_model_with_rate_limit_retry(
+    model: Any,
+    messages: Sequence[BaseMessage],
+    *,
+    model_name: str,
+    model_identifier: str,
+    call_name: str,
+    retry_callback: RateLimitRetryCallback | None,
+) -> AIMessage:
+    for retries_used, delay_seconds in enumerate(
+        (*RATE_LIMIT_RETRY_DELAYS_SECONDS, None)
+    ):
+        try:
+            return await model.ainvoke(messages)
+        except Exception as exc:
+            if delay_seconds is None or not _is_rate_limit_error(exc):
+                raise
+
+            attempt = retries_used + 1
+            error_text = str(exc)
+            logger.warning(
+                "llm rate limited call={} model={} retry={} delay_seconds={} error={!r}",
+                call_name,
+                model_name,
+                attempt,
+                delay_seconds,
+                error_text,
+            )
+            if logfire_enabled():
+                with logfire.span(
+                    "llm_rate_limit_retry",
+                    call_name=call_name,
+                    model_name=model_name,
+                    model_identifier=model_identifier,
+                    retry_attempt=attempt,
+                    retry_delay_seconds=delay_seconds,
+                    max_retries=len(RATE_LIMIT_RETRY_DELAYS_SECONDS),
+                    error=error_text,
+                ):
+                    logfire.info(
+                        "llm rate limited; auto retrying",
+                        call_name=call_name,
+                        model_name=model_name,
+                        model_identifier=model_identifier,
+                        retry_attempt=attempt,
+                        retry_delay_seconds=delay_seconds,
+                        max_retries=len(RATE_LIMIT_RETRY_DELAYS_SECONDS),
+                        error=error_text,
+                    )
+
+            if retry_callback is not None:
+                await retry_callback(
+                    RateLimitRetryEvent(
+                        attempt=attempt,
+                        delay_seconds=delay_seconds,
+                        max_retries=len(RATE_LIMIT_RETRY_DELAYS_SECONDS),
+                        call_name=call_name,
+                        model_name=model_name,
+                        model_identifier=model_identifier,
+                        error=error_text,
+                    )
+                )
+            await asyncio.sleep(delay_seconds)
+
+    raise RuntimeError("unreachable model retry state")
 
 
 def _extract_tool_names_for_latest_turn(messages: Sequence[BaseMessage]) -> list[str]:
@@ -337,25 +446,71 @@ class ChatService:
             if model_routes_via_gemini(model_identifier):
                 self.rate_limiter.wait(logger)
 
-            async for chunk, metadata in self.graph.astream(
-                {"messages": [HumanMessage(content=message)]},
-                self._thread_config(conversation.id, model_name=model_name),
-                stream_mode="messages",
-            ):
-                if not isinstance(chunk, AIMessageChunk):
-                    continue
-                node_name = (
-                    metadata.get("langgraph_node")
-                    if isinstance(metadata, dict)
-                    else None
+            retry_count = 0
+            stream_events: asyncio.Queue[dict[str, Any] | Exception | None] = (
+                asyncio.Queue()
+            )
+
+            async def emit_retry(event: RateLimitRetryEvent) -> None:
+                nonlocal retry_count
+                retry_count += 1
+                await stream_events.put(
+                    {
+                        "type": "rate_limit_retry",
+                        "retry_count": retry_count,
+                        "retry_attempt": event.attempt,
+                        "delay_seconds": event.delay_seconds,
+                        "max_retries": event.max_retries,
+                        "call": event.call_name,
+                    }
                 )
-                if node_name is not None and node_name != "agent":
-                    continue
-                content = chunk.content
-                text = content if isinstance(content, str) else str(content)
-                if not text:
-                    continue
-                yield {"type": "delta", "content": text}
+
+            async def produce_graph_events() -> None:
+                try:
+                    async for chunk, metadata in self.graph.astream(
+                        {"messages": [HumanMessage(content=message)]},
+                        self._thread_config(
+                            conversation.id,
+                            model_name=model_name,
+                            rate_limit_retry_callback=emit_retry,
+                        ),
+                        stream_mode="messages",
+                    ):
+                        if not isinstance(chunk, AIMessageChunk):
+                            continue
+                        node_name = (
+                            metadata.get("langgraph_node")
+                            if isinstance(metadata, dict)
+                            else None
+                        )
+                        if node_name is not None and node_name != "agent":
+                            continue
+                        content = chunk.content
+                        text = content if isinstance(content, str) else str(content)
+                        if not text:
+                            continue
+                        await stream_events.put({"type": "delta", "content": text})
+                except Exception as exc:
+                    await stream_events.put(exc)
+                finally:
+                    await stream_events.put(None)
+
+            producer = asyncio.create_task(produce_graph_events())
+            try:
+                while True:
+                    event = await stream_events.get()
+                    if event is None:
+                        break
+                    if isinstance(event, Exception):
+                        raise event
+                    yield event
+            finally:
+                if not producer.done():
+                    producer.cancel()
+                    try:
+                        await producer
+                    except asyncio.CancelledError:
+                        pass
 
             state = await self.graph.aget_state(self._thread_config(conversation.id))
             raw_messages: Sequence[BaseMessage] = state.values.get("messages", [])
@@ -378,6 +533,7 @@ class ChatService:
                 response_message,
                 total_tat_seconds=total_tat_seconds,
                 tool_names=tool_names,
+                rate_limit_retries=retry_count,
             )
             if response is None:
                 raise RuntimeError("model response could not be serialized")
@@ -393,6 +549,7 @@ class ChatService:
                     "total_tat_seconds": total_tat_seconds,
                     "tool_calls": len(tool_names),
                     "tools": tool_names,
+                    "rate_limit_retries": retry_count,
                 }
                 if chat_span is not None:
                     chat_span.set_attributes(attributes)
@@ -409,6 +566,7 @@ class ChatService:
                     total_tat_seconds=total_tat_seconds,
                     tool_calls=len(tool_names),
                     tools=tool_names,
+                    rate_limit_retries=retry_count,
                     streaming=True,
                 )
 
@@ -417,7 +575,7 @@ class ChatService:
         if updated is None:
             raise RuntimeError("conversation disappeared during chat request")
         logger.info(
-            "chat stream response thread={} model={} chars={} total_tat_seconds={:.3f} input_tokens={} output_tokens={} total_tokens={} tool_calls={} response={!r}",
+            "chat stream response thread={} model={} chars={} total_tat_seconds={:.3f} input_tokens={} output_tokens={} total_tokens={} tool_calls={} rate_limit_retries={} response={!r}",
             conversation.id,
             model_name,
             len(response.content),
@@ -426,6 +584,7 @@ class ChatService:
             token_usage["output_tokens"],
             token_usage["total_tokens"],
             response.stats.tool_calls if response.stats is not None else 0,
+            response.stats.rate_limit_retries if response.stats is not None else 0,
             response.content,
         )
         yield {
@@ -454,23 +613,49 @@ class ChatService:
         if not isinstance(model_name, str):
             model_name = self.cfg.kirana.available_models[0]
         model_identifier = self.cfg.kirana.model_identifiers[model_name]
+        retry_callback = configurable.get("rate_limit_retry_callback")
+        if not callable(retry_callback):
+            retry_callback = None
         if model_routes_via_gemini(model_identifier) and self._tools:
-            return {"messages": [await self._gemini_agent_response(model_name, state)]}
+            return {
+                "messages": [
+                    await self._gemini_agent_response(
+                        model_name, state, retry_callback=retry_callback
+                    )
+                ]
+            }
 
         model = self._model(model_name)
         if self._tools:
             model = model.bind_tools(self._tools)
-        response = await model.ainvoke(
-            [SystemMessage(content=self._system_prompt()), *state["messages"]]
+        response = await _invoke_model_with_rate_limit_retry(
+            model,
+            [SystemMessage(content=self._system_prompt()), *state["messages"]],
+            model_name=model_name,
+            model_identifier=model_identifier,
+            call_name="agent",
+            retry_callback=retry_callback,
         )
         return {"messages": [response]}
 
     async def _gemini_agent_response(
-        self, model_name: str, state: MessagesState
+        self,
+        model_name: str,
+        state: MessagesState,
+        *,
+        retry_callback: RateLimitRetryCallback | None,
     ) -> AIMessage:
         base_messages = [SystemMessage(content=self._system_prompt()), *state["messages"]]
         model = self._model(model_name)
-        tool_request = await model.bind_tools(self._tools).ainvoke(base_messages)
+        model_identifier = self.cfg.kirana.model_identifiers[model_name]
+        tool_request = await _invoke_model_with_rate_limit_retry(
+            model.bind_tools(self._tools),
+            base_messages,
+            model_name=model_name,
+            model_identifier=model_identifier,
+            call_name="gemini_tool_request",
+            retry_callback=retry_callback,
+        )
         tool_calls = getattr(tool_request, "tool_calls", []) or []
         if not tool_calls:
             return tool_request
@@ -501,7 +686,14 @@ class ChatService:
                 + "\n".join(tool_result_lines)
             )
         )
-        final_response = await model.ainvoke([*base_messages, synthesis_prompt])
+        final_response = await _invoke_model_with_rate_limit_retry(
+            model,
+            [*base_messages, synthesis_prompt],
+            model_name=model_name,
+            model_identifier=model_identifier,
+            call_name="gemini_synthesis",
+            retry_callback=retry_callback,
+        )
         final_response.additional_kwargs = {
             **getattr(final_response, "additional_kwargs", {}),
             "kirana_tool_names": tool_names,
@@ -554,11 +746,17 @@ class ChatService:
         )
 
     def _thread_config(
-        self, thread_id: str, *, model_name: str | None = None
+        self,
+        thread_id: str,
+        *,
+        model_name: str | None = None,
+        rate_limit_retry_callback: RateLimitRetryCallback | None = None,
     ) -> dict[str, Any]:
-        configurable = {"thread_id": thread_id}
+        configurable: dict[str, Any] = {"thread_id": thread_id}
         if model_name is not None:
             configurable["model_name"] = model_name
+        if rate_limit_retry_callback is not None:
+            configurable["rate_limit_retry_callback"] = rate_limit_retry_callback
         return {"configurable": configurable}
 
     @staticmethod

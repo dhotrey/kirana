@@ -179,6 +179,8 @@ If `thread_id` is omitted or unknown, the service creates a new conversation and
 
 Finance database tool calls use a shared `D1Database` client created during application startup from `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID`. If these are unavailable, the chat stream still starts, but the assistant receives a tool error and should report that structured finance lookup is unavailable. Tool calls and D1 queries are logged with Loguru and, when Logfire is enabled, recorded as spans with query text, row counts, and latency metadata.
 
+LLM calls that fail with a 429 rate-limit response are retried automatically after 10, 15, and 20 seconds. Each retry emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
+
 ### Request
 
 ```json
@@ -202,8 +204,9 @@ Finance database tool calls use a shared `D1Database` client created during appl
 Event types:
 
 - `start`: emitted once before any token deltas. Contains `thread_id` and the resolved `conversation` object (created on the fly if `thread_id` was omitted or unknown).
+- `rate_limit_retry`: emitted when an LLM call receives a 429 rate-limit response and the service is waiting before retrying. Contains cumulative `retry_count`, per-call `retry_attempt`, `delay_seconds`, `max_retries`, and `call`.
 - `delta`: emitted repeatedly as token chunks arrive from the model. Contains the incremental `content` string for the assistant message.
-- `end`: emitted once after the model finishes. Contains `thread_id`, the refreshed `conversation`, and the full assistant `message` (including `stats` with `total_tat_seconds`, `input_tokens`, `output_tokens`, `total_tokens`, `tool_calls`, and `tools`).
+- `end`: emitted once after the model finishes. Contains `thread_id`, the refreshed `conversation`, and the full assistant `message` (including `stats` with `total_tat_seconds`, `input_tokens`, `output_tokens`, `total_tokens`, `tool_calls`, `tools`, and `rate_limit_retries`).
 - `error`: emitted if the request fails (e.g. unknown model). Contains a `detail` string.
 
 Example stream:
@@ -234,6 +237,7 @@ Each chat request emits:
 - `chat_request` span with `thread_id`, model alias, model identifier, query text, and query length.
 - `chat query` event with the raw user query.
 - OpenAI-compatible LLM span for the Cloudflare AI Gateway call.
-- `chat response` event with raw response text, response length, total request turnaround time in seconds, input tokens, output tokens, and total tokens.
+- `llm_rate_limit_retry` spans when 429 rate-limit responses are retried.
+- `chat response` event with raw response text, response length, total request turnaround time in seconds, input tokens, output tokens, total tokens, tool calls, tools, and rate-limit retry count.
 
 The same query, response, total request turnaround time, and token metadata is written to the configured chat logfile, currently `[kirana].chat_log_file` in `app/config.toml`.

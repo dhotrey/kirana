@@ -22,6 +22,7 @@ class ChatMessageStats(BaseModel):
     total_tokens: int
     tool_calls: int = 0
     tools: list[str] = Field(default_factory=list)
+    rate_limit_retries: int = 0
 
 
 class ChatMessage(BaseModel):
