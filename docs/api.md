@@ -187,7 +187,8 @@ LLM calls that fail with a 429 rate-limit response are retried automatically aft
 {
   "thread_id": "1f15484d-d3a5-4571-8485-e0b43668a2f7",
   "model": "mistral",
-  "message": "Reply with exactly: pong"
+  "message": "Reply with exactly: pong",
+  "system_prompt": null
 }
 ```
 
@@ -196,6 +197,7 @@ LLM calls that fail with a 429 rate-limit response are retried automatically aft
 | `thread_id` | string or null | No | Existing conversation UUID. |
 | `model` | string | Yes | Model alias from `GET /api/models`. |
 | `message` | string | Yes | User message. Must be non-empty. |
+| `system_prompt` | string or null | No | Per-request system prompt override for benchmark ablations. When omitted, the app reads `app/prompts/system_prompt.md`. The override is not persisted and does not modify files. |
 
 ### Response
 
@@ -245,6 +247,7 @@ This endpoint streams the same SSE event shape as `POST /api/chat/stream`.
 | `thread_id` | string or empty | No | Existing conversation UUID. Empty creates a new conversation. |
 | `model` | string | Yes | Model alias from `GET /api/models`. |
 | `message` | string | No | Text question to ask alongside the image. If empty, the agent uses a default purchase-history image query. |
+| `system_prompt` | string | No | Per-request system prompt override for benchmark ablations. When omitted, the app reads `app/prompts/system_prompt.md`. The override is not persisted and does not modify files. |
 | `image` | file | Yes | Image to embed and make available to the agent. Must have an `image/*` content type and be 10 MB or smaller. |
 
 ### Errors

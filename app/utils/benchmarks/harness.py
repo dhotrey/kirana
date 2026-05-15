@@ -91,11 +91,13 @@ class BenchmarkClient:
         *,
         base_url: str = "http://127.0.0.1:8000",
         model: str,
+        system_prompt: str | None = None,
         timeout: float | httpx.Timeout = 120.0,
         client: httpx.Client | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.system_prompt = system_prompt
         self._owns_client = client is None
         self._client = client or httpx.Client(base_url=self.base_url, timeout=timeout)
 
@@ -131,15 +133,15 @@ class BenchmarkClient:
         thread_id: str | None,
         prior_turns: list[AgentTurn],
     ) -> AgentResponse:
-        events = list(
-            self._stream_chat_events(
-                {
-                    "message": prompt,
-                    "model": self.model,
-                    "thread_id": thread_id,
-                }
-            )
-        )
+        payload = {
+            "message": prompt,
+            "model": self.model,
+            "thread_id": thread_id,
+        }
+        if self.system_prompt is not None:
+            payload["system_prompt"] = self.system_prompt
+
+        events = list(self._stream_chat_events(payload))
         return self._response_from_events(
             prompt=prompt,
             events=events,
@@ -186,6 +188,8 @@ class BenchmarkClient:
         data = {"message": prompt, "model": self.model}
         if thread_id is not None:
             data["thread_id"] = thread_id
+        if self.system_prompt is not None:
+            data["system_prompt"] = self.system_prompt
 
         with image_path.open("rb") as image_file:
             files = {

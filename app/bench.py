@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Any
 
 from chat.gateway import build_chat_model
@@ -22,7 +23,10 @@ BASE_URL = "http://127.0.0.1:8000"
 RESULTS_PATH = Path(__file__).with_name(
     "kirana_agent_tools_and_instruction_following.json"
 )
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 TEST_IMAGES_DIR = Path(__file__).parent / "utils" / "benchmarks" / "test-images"
+QF3_MIN_SLEEP_SECONDS = 30.0
+QF3_MAX_SLEEP_SECONDS = 60.0
 
 
 @dataclass(frozen=True)
@@ -423,6 +427,7 @@ def load_existing_results() -> dict[str, Any]:
 
 
 def write_results(results: dict[str, Any]) -> None:
+    RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(
         json.dumps(results, indent=2, ensure_ascii=True),
         encoding="utf-8",
@@ -431,6 +436,40 @@ def write_results(results: dict[str, Any]) -> None:
 
 def log_progress(message: str) -> None:
     print(message, flush=True)
+
+
+def sleep_for_qf3_rate_limit(reason: str) -> None:
+    sleep_seconds = random.uniform(QF3_MIN_SLEEP_SECONDS, QF3_MAX_SLEEP_SECONDS)
+    log_progress(f"QF-3 rate-limit sleep before {reason}: {sleep_seconds:.1f}s")
+    sleep(sleep_seconds)
+
+
+def resolve_output_path(raw_path: str | None) -> Path:
+    if raw_path is None:
+        return RESULTS_PATH
+    path = Path(raw_path)
+    return path if path.is_absolute() else Path.cwd() / path
+
+
+def resolve_system_prompt_path(raw_path: str) -> Path:
+    path = Path(raw_path)
+    candidates = (
+        [path]
+        if path.is_absolute()
+        else [Path.cwd() / path, PROMPTS_DIR / path]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def read_system_prompt_override(prompt_path: Path | None) -> str | None:
+    if prompt_path is None:
+        return None
+    if not prompt_path.exists():
+        raise FileNotFoundError(f"system prompt override not found: {prompt_path}")
+    return prompt_path.read_text(encoding="utf-8")
 
 
 def qf_result_template(*, model: str, total: int) -> dict[str, Any]:
@@ -518,6 +557,8 @@ def run_qf3(
     log_progress(f"\nRunning QF-3: {len(QF3_CASES)} test cases")
 
     for index, case in enumerate(QF3_CASES, start=1):
+        if index > 1:
+            sleep_for_qf3_rate_limit("next case")
         log_progress(f"QF-3 {index}/{len(QF3_CASES)} running: {case.id}")
         try:
             response = benchmark.query(case.prompt)
@@ -536,6 +577,7 @@ def run_qf3(
             actual = response.content.strip()
             agent_response = response.model_dump()
             try:
+                sleep_for_qf3_rate_limit("judge call")
                 judge_result = judge_response(
                     cfg=cfg,
                     judge_model_identifier=judge_model_identifier,
@@ -641,6 +683,23 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Run every benchmark family currently defined in this file.",
     )
+    parser.add_argument(
+        "--system_prompt",
+        default=None,
+        help=(
+            "Use this prompt file as a per-request system prompt override while "
+            "benchmarks run. The repo prompt file is not modified. Relative paths "
+            "are resolved from the current directory, then app/prompts/."
+        ),
+    )
+    parser.add_argument(
+        "--out",
+        default=None,
+        help=(
+            "Output JSON path. Defaults to "
+            "app/kirana_agent_tools_and_instruction_following.json."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -660,7 +719,14 @@ def selected_query_families(args: argparse.Namespace) -> list[str]:
 
 
 def main() -> int:
+    global RESULTS_PATH
+
     args = parse_args()
+    RESULTS_PATH = resolve_output_path(args.out)
+    prompt_override = (
+        resolve_system_prompt_path(args.system_prompt) if args.system_prompt else None
+    )
+    system_prompt = read_system_prompt_override(prompt_override)
     cfg = load_config("config.toml")
     model = cfg.kirana.available_models[0]
     results = load_existing_results()
@@ -670,8 +736,14 @@ def main() -> int:
         f"with model={model}"
     )
     log_progress(f"Results file: {RESULTS_PATH}")
+    if prompt_override is not None:
+        log_progress(f"System prompt override sent per request: {prompt_override}")
 
-    with BenchmarkClient(base_url=BASE_URL, model=model) as benchmark:
+    with BenchmarkClient(
+        base_url=BASE_URL,
+        model=model,
+        system_prompt=system_prompt,
+    ) as benchmark:
         if "QF-1" in query_families:
             run_qf1(benchmark=benchmark, results=results, model=model)
         if "QF-2" in query_families:

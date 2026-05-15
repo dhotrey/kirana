@@ -413,6 +413,7 @@ class ChatService:
         message: str,
         model_name: str,
         thread_id: str | None,
+        system_prompt: str | None = None,
         image_bytes: bytes | None = None,
         image_filename: str | None = None,
         image_content_type: str | None = None,
@@ -499,6 +500,7 @@ class ChatService:
                             conversation.id,
                             model_name=model_name,
                             rate_limit_retry_callback=emit_retry,
+                            system_prompt=system_prompt,
                         ),
                         stream_mode="messages",
                     ):
@@ -646,7 +648,10 @@ class ChatService:
             return {
                 "messages": [
                     await self._gemini_agent_response(
-                        model_name, state, retry_callback=retry_callback
+                        model_name,
+                        state,
+                        configurable=configurable,
+                        retry_callback=retry_callback,
                     )
                 ]
             }
@@ -656,7 +661,10 @@ class ChatService:
             model = model.bind_tools(self._tools)
         response = await _invoke_model_with_rate_limit_retry(
             model,
-            [SystemMessage(content=self._system_prompt()), *state["messages"]],
+            [
+                SystemMessage(content=self._system_prompt(configurable)),
+                *state["messages"],
+            ],
             model_name=model_name,
             model_identifier=model_identifier,
             call_name="agent",
@@ -669,9 +677,13 @@ class ChatService:
         model_name: str,
         state: MessagesState,
         *,
+        configurable: dict[str, Any],
         retry_callback: RateLimitRetryCallback | None,
     ) -> AIMessage:
-        base_messages = [SystemMessage(content=self._system_prompt()), *state["messages"]]
+        base_messages = [
+            SystemMessage(content=self._system_prompt(configurable)),
+            *state["messages"],
+        ]
         messages: list[BaseMessage] = list(base_messages)
         model = self._model(model_name)
         model_identifier = self.cfg.kirana.model_identifiers[model_name]
@@ -735,8 +747,14 @@ class ChatService:
         }
         return final_response
 
-    def _system_prompt(self) -> str:
-        prompt = load_prompt(self.cfg.ingestion.prompts_dir, SYSTEM_PROMPT_NAME).strip()
+    def _system_prompt(self, configurable: dict[str, Any]) -> str:
+        override = configurable.get("system_prompt")
+        if isinstance(override, str) and override.strip():
+            prompt = override.strip()
+        else:
+            prompt = load_prompt(
+                self.cfg.ingestion.prompts_dir, SYSTEM_PROMPT_NAME
+            ).strip()
         return f"Today's date is {datetime.now().date().isoformat()}.\n\n{prompt}"
 
     def _model(self, model_name: str) -> Any:
@@ -852,12 +870,15 @@ class ChatService:
         *,
         model_name: str | None = None,
         rate_limit_retry_callback: RateLimitRetryCallback | None = None,
+        system_prompt: str | None = None,
     ) -> dict[str, Any]:
         configurable: dict[str, Any] = {"thread_id": thread_id}
         if model_name is not None:
             configurable["model_name"] = model_name
         if rate_limit_retry_callback is not None:
             configurable["rate_limit_retry_callback"] = rate_limit_retry_callback
+        if system_prompt is not None:
+            configurable["system_prompt"] = system_prompt
         return {"configurable": configurable}
 
     @staticmethod

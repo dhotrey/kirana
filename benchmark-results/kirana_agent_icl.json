@@ -1,0 +1,2891 @@
+{
+  "QF-1": {
+    "test_cases_passed": 4,
+    "test_cases_total": 5,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf1_001_personal_march_spend",
+        "prompt": "How much money did I spend in the month of March ? Reply with just the amount and nothing else.",
+        "expected": "385.06",
+        "actual": "399.50",
+        "passed": false,
+        "agent_response": {
+          "thread_id": "75eb058f-515f-45fc-8050-520523b5de04",
+          "conversation": {
+            "id": "75eb058f-515f-45fc-8050-520523b5de04",
+            "title": "How much money did I spend in the month of Marc...",
+            "created_at": "2026-05-15T00:58:37.962Z",
+            "updated_at": "2026-05-15T00:58:43.202Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How much money did I spend in the month of March ? Reply with just the amount and nothing else.",
+              "thread_id": "75eb058f-515f-45fc-8050-520523b5de04",
+              "conversation": {
+                "id": "75eb058f-515f-45fc-8050-520523b5de04",
+                "title": "How much money did I spend in the month of Marc...",
+                "created_at": "2026-05-15T00:58:37.962Z",
+                "updated_at": "2026-05-15T00:58:43.202Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "399.50",
+                "stats": {
+                  "total_tat_seconds": 5.238,
+                  "input_tokens": 2940,
+                  "output_tokens": 7,
+                  "total_tokens": 2947,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "75eb058f-515f-45fc-8050-520523b5de04",
+                "conversation": {
+                  "id": "75eb058f-515f-45fc-8050-520523b5de04",
+                  "title": "How much money did I spend in the month of Marc...",
+                  "created_at": "2026-05-15T00:58:37.962Z",
+                  "updated_at": "2026-05-15T00:58:37.962Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "75eb058f-515f-45fc-8050-520523b5de04",
+                "conversation": {
+                  "id": "75eb058f-515f-45fc-8050-520523b5de04",
+                  "title": "How much money did I spend in the month of Marc...",
+                  "created_at": "2026-05-15T00:58:37.962Z",
+                  "updated_at": "2026-05-15T00:58:43.202Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "399.50",
+                  "stats": {
+                    "total_tat_seconds": 5.238,
+                    "input_tokens": 2940,
+                    "output_tokens": 7,
+                    "total_tokens": 2947,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "399.50",
+          "latest_message": {
+            "role": "assistant",
+            "content": "399.50",
+            "stats": {
+              "total_tat_seconds": 5.238,
+              "input_tokens": 2940,
+              "output_tokens": 7,
+              "total_tokens": 2947,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 5.238,
+            "input_tokens": 2940,
+            "output_tokens": 7,
+            "total_tokens": 2947,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf1_002_household_april_grocery_spend",
+        "prompt": "How much money did my household spend on groceries in the month of April ? Reply with just the amount and nothing else.",
+        "expected": "643.91",
+        "actual": "643.91",
+        "passed": true,
+        "agent_response": {
+          "thread_id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+          "conversation": {
+            "id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+            "title": "How much money did my household spend on grocer...",
+            "created_at": "2026-05-15T00:58:43.209Z",
+            "updated_at": "2026-05-15T00:58:47.104Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How much money did my household spend on groceries in the month of April ? Reply with just the amount and nothing else.",
+              "thread_id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+              "conversation": {
+                "id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+                "title": "How much money did my household spend on grocer...",
+                "created_at": "2026-05-15T00:58:43.209Z",
+                "updated_at": "2026-05-15T00:58:47.104Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 3.892,
+                  "input_tokens": 2946,
+                  "output_tokens": 7,
+                  "total_tokens": 2953,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+                "conversation": {
+                  "id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+                  "title": "How much money did my household spend on grocer...",
+                  "created_at": "2026-05-15T00:58:43.209Z",
+                  "updated_at": "2026-05-15T00:58:43.209Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+                "conversation": {
+                  "id": "c521f29c-50df-4201-a2e7-c8966f26a203",
+                  "title": "How much money did my household spend on grocer...",
+                  "created_at": "2026-05-15T00:58:43.209Z",
+                  "updated_at": "2026-05-15T00:58:47.104Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 3.892,
+                    "input_tokens": 2946,
+                    "output_tokens": 7,
+                    "total_tokens": 2953,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "643.91",
+          "latest_message": {
+            "role": "assistant",
+            "content": "643.91",
+            "stats": {
+              "total_tat_seconds": 3.892,
+              "input_tokens": 2946,
+              "output_tokens": 7,
+              "total_tokens": 2953,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 3.892,
+            "input_tokens": 2946,
+            "output_tokens": 7,
+            "total_tokens": 2953,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf1_003_household_march_trip_count",
+        "prompt": "How many grocery trips did my household do in the month of March. Reply with just the number and nothing else.",
+        "expected": "11",
+        "actual": "11",
+        "passed": true,
+        "agent_response": {
+          "thread_id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+          "conversation": {
+            "id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+            "title": "How many grocery trips did my household do in t...",
+            "created_at": "2026-05-15T00:58:47.112Z",
+            "updated_at": "2026-05-15T00:59:59.813Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How many grocery trips did my household do in the month of March. Reply with just the number and nothing else.",
+              "thread_id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+              "conversation": {
+                "id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+                "title": "How many grocery trips did my household do in t...",
+                "created_at": "2026-05-15T00:58:47.112Z",
+                "updated_at": "2026-05-15T00:59:59.813Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "11",
+                "stats": {
+                  "total_tat_seconds": 72.701,
+                  "input_tokens": 2899,
+                  "output_tokens": 3,
+                  "total_tokens": 2902,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 3
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 2,
+                  "delay_seconds": 30,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 3,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+                "conversation": {
+                  "id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+                  "title": "How many grocery trips did my household do in t...",
+                  "created_at": "2026-05-15T00:58:47.112Z",
+                  "updated_at": "2026-05-15T00:58:47.112Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+                "conversation": {
+                  "id": "63c0d893-ad52-4ca8-bf29-d82c16053377",
+                  "title": "How many grocery trips did my household do in t...",
+                  "created_at": "2026-05-15T00:58:47.112Z",
+                  "updated_at": "2026-05-15T00:59:59.813Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "11",
+                  "stats": {
+                    "total_tat_seconds": 72.701,
+                    "input_tokens": 2899,
+                    "output_tokens": 3,
+                    "total_tokens": 2902,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 3
+                  }
+                }
+              }
+            }
+          ],
+          "content": "11",
+          "latest_message": {
+            "role": "assistant",
+            "content": "11",
+            "stats": {
+              "total_tat_seconds": 72.701,
+              "input_tokens": 2899,
+              "output_tokens": 3,
+              "total_tokens": 2902,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 3
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 72.701,
+            "input_tokens": 2899,
+            "output_tokens": 3,
+            "total_tokens": 2902,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 3,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf1_004_feb_woolworths_visit_count",
+        "prompt": "How many times did we visit Woolworths in the month of Feb. Reply with just the number and nothing else.",
+        "expected": "0",
+        "actual": "0",
+        "passed": true,
+        "agent_response": {
+          "thread_id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+          "conversation": {
+            "id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+            "title": "How many times did we visit Woolworths in the m...",
+            "created_at": "2026-05-15T00:59:59.823Z",
+            "updated_at": "2026-05-15T01:00:38.810Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How many times did we visit Woolworths in the month of Feb. Reply with just the number and nothing else.",
+              "thread_id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+              "conversation": {
+                "id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+                "title": "How many times did we visit Woolworths in the m...",
+                "created_at": "2026-05-15T00:59:59.823Z",
+                "updated_at": "2026-05-15T01:00:38.810Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "0",
+                "stats": {
+                  "total_tat_seconds": 38.986,
+                  "input_tokens": 2919,
+                  "output_tokens": 2,
+                  "total_tokens": 2921,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+                "conversation": {
+                  "id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+                  "title": "How many times did we visit Woolworths in the m...",
+                  "created_at": "2026-05-15T00:59:59.823Z",
+                  "updated_at": "2026-05-15T00:59:59.823Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+                "conversation": {
+                  "id": "e1f6c7ab-2ef0-480c-b68f-7f8a2f69e944",
+                  "title": "How many times did we visit Woolworths in the m...",
+                  "created_at": "2026-05-15T00:59:59.823Z",
+                  "updated_at": "2026-05-15T01:00:38.810Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "0",
+                  "stats": {
+                    "total_tat_seconds": 38.986,
+                    "input_tokens": 2919,
+                    "output_tokens": 2,
+                    "total_tokens": 2921,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "0",
+          "latest_message": {
+            "role": "assistant",
+            "content": "0",
+            "stats": {
+              "total_tat_seconds": 38.986,
+              "input_tokens": 2919,
+              "output_tokens": 2,
+              "total_tokens": 2921,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 38.986,
+            "input_tokens": 2919,
+            "output_tokens": 2,
+            "total_tokens": 2921,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf1_005_april_fruit_temple_visit_count",
+        "prompt": "How many times did we visit THE FRUIT TEMPLE in April. Reply with just the number and nothing else.",
+        "expected": "6",
+        "actual": "6",
+        "passed": true,
+        "agent_response": {
+          "thread_id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+          "conversation": {
+            "id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+            "title": "How many times did we visit THE FRUIT TEMPLE in...",
+            "created_at": "2026-05-15T01:00:38.816Z",
+            "updated_at": "2026-05-15T01:01:00.832Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How many times did we visit THE FRUIT TEMPLE in April. Reply with just the number and nothing else.",
+              "thread_id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+              "conversation": {
+                "id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+                "title": "How many times did we visit THE FRUIT TEMPLE in...",
+                "created_at": "2026-05-15T01:00:38.816Z",
+                "updated_at": "2026-05-15T01:01:00.832Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "6",
+                "stats": {
+                  "total_tat_seconds": 22.015,
+                  "input_tokens": 2924,
+                  "output_tokens": 2,
+                  "total_tokens": 2926,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+                "conversation": {
+                  "id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+                  "title": "How many times did we visit THE FRUIT TEMPLE in...",
+                  "created_at": "2026-05-15T01:00:38.816Z",
+                  "updated_at": "2026-05-15T01:00:38.816Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+                "conversation": {
+                  "id": "ff4dac91-572e-4e9e-b093-98e8f90b26b5",
+                  "title": "How many times did we visit THE FRUIT TEMPLE in...",
+                  "created_at": "2026-05-15T01:00:38.816Z",
+                  "updated_at": "2026-05-15T01:01:00.832Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "6",
+                  "stats": {
+                    "total_tat_seconds": 22.015,
+                    "input_tokens": 2924,
+                    "output_tokens": 2,
+                    "total_tokens": 2926,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "6",
+          "latest_message": {
+            "role": "assistant",
+            "content": "6",
+            "stats": {
+              "total_tat_seconds": 22.015,
+              "input_tokens": 2924,
+              "output_tokens": 2,
+              "total_tokens": 2926,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 22.015,
+            "input_tokens": 2924,
+            "output_tokens": 2,
+            "total_tokens": 2926,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      }
+    ]
+  },
+  "QF-2": {
+    "test_cases_passed": 3,
+    "test_cases_total": 5,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf2_001_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/1.jpg",
+        "expected": "yes",
+        "actual": "No",
+        "passed": false,
+        "error": null,
+        "agent_response": {
+          "thread_id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+          "conversation": {
+            "id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T01:01:12.942Z",
+            "updated_at": "2026-05-15T01:01:55.101Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+              "conversation": {
+                "id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T01:01:12.942Z",
+                "updated_at": "2026-05-15T01:01:55.101Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "No",
+                "stats": {
+                  "total_tat_seconds": 54.241,
+                  "input_tokens": 4723,
+                  "output_tokens": 2,
+                  "total_tokens": 4725,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/1.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+                "conversation": {
+                  "id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:01:12.942Z",
+                  "updated_at": "2026-05-15T01:01:12.942Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+                "conversation": {
+                  "id": "f6089225-04e5-48c7-92d2-af88eabfc6a3",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:01:12.942Z",
+                  "updated_at": "2026-05-15T01:01:55.101Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "No",
+                  "stats": {
+                    "total_tat_seconds": 54.241,
+                    "input_tokens": 4723,
+                    "output_tokens": 2,
+                    "total_tokens": 4725,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "No",
+          "latest_message": {
+            "role": "assistant",
+            "content": "No",
+            "stats": {
+              "total_tat_seconds": 54.241,
+              "input_tokens": 4723,
+              "output_tokens": 2,
+              "total_tokens": 4725,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 54.241,
+            "input_tokens": 4723,
+            "output_tokens": 2,
+            "total_tokens": 4725,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_002_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/2.jpg",
+        "expected": "yes",
+        "actual": "**Yes** *(Vectorize matched \"WW Natural Greek Style Yoghurt 1kg\" at **0.57** and \"Farmers Union Greek Style Yogurt 1kg\" at **0.50**; SQL confirmed 5 purchases at Woolworths between 2026-03-28 and 2026-04-23.)*",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+          "conversation": {
+            "id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T01:02:06.889Z",
+            "updated_at": "2026-05-15T01:02:32.699Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+              "conversation": {
+                "id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T01:02:06.889Z",
+                "updated_at": "2026-05-15T01:02:32.699Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "**Yes** *(Vectorize matched \"WW Natural Greek Style Yoghurt 1kg\" at **0.57** and \"Farmers Union Greek Style Yogurt 1kg\" at **0.50**; SQL confirmed 5 purchases at Woolworths between 2026-03-28 and 2026-04-23.)*",
+                "stats": {
+                  "total_tat_seconds": 37.584,
+                  "input_tokens": 4585,
+                  "output_tokens": 84,
+                  "total_tokens": 4669,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/2.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+                "conversation": {
+                  "id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:02:06.889Z",
+                  "updated_at": "2026-05-15T01:02:06.889Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+                "conversation": {
+                  "id": "175172cc-afe6-45ec-af8f-42f42b2f5e30",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:02:06.889Z",
+                  "updated_at": "2026-05-15T01:02:32.699Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "**Yes** *(Vectorize matched \"WW Natural Greek Style Yoghurt 1kg\" at **0.57** and \"Farmers Union Greek Style Yogurt 1kg\" at **0.50**; SQL confirmed 5 purchases at Woolworths between 2026-03-28 and 2026-04-23.)*",
+                  "stats": {
+                    "total_tat_seconds": 37.584,
+                    "input_tokens": 4585,
+                    "output_tokens": 84,
+                    "total_tokens": 4669,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "**Yes** *(Vectorize matched \"WW Natural Greek Style Yoghurt 1kg\" at **0.57** and \"Farmers Union Greek Style Yogurt 1kg\" at **0.50**; SQL confirmed 5 purchases at Woolworths between 2026-03-28 and 2026-04-23.)*",
+          "latest_message": {
+            "role": "assistant",
+            "content": "**Yes** *(Vectorize matched \"WW Natural Greek Style Yoghurt 1kg\" at **0.57** and \"Farmers Union Greek Style Yogurt 1kg\" at **0.50**; SQL confirmed 5 purchases at Woolworths between 2026-03-28 and 2026-04-23.)*",
+            "stats": {
+              "total_tat_seconds": 37.584,
+              "input_tokens": 4585,
+              "output_tokens": 84,
+              "total_tokens": 4669,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 37.584,
+            "input_tokens": 4585,
+            "output_tokens": 84,
+            "total_tokens": 4669,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_003_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/3.jpg",
+        "expected": "no",
+        "actual": "No",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+          "conversation": {
+            "id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T01:02:44.379Z",
+            "updated_at": "2026-05-15T01:03:10.886Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+              "conversation": {
+                "id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T01:02:44.379Z",
+                "updated_at": "2026-05-15T01:03:10.886Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "No",
+                "stats": {
+                  "total_tat_seconds": 38.172,
+                  "input_tokens": 5228,
+                  "output_tokens": 2,
+                  "total_tokens": 5230,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/3.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+                "conversation": {
+                  "id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:02:44.379Z",
+                  "updated_at": "2026-05-15T01:02:44.379Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+                "conversation": {
+                  "id": "bd0828c2-0840-4b85-8cef-7b90cf157e6c",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:02:44.379Z",
+                  "updated_at": "2026-05-15T01:03:10.886Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "No",
+                  "stats": {
+                    "total_tat_seconds": 38.172,
+                    "input_tokens": 5228,
+                    "output_tokens": 2,
+                    "total_tokens": 5230,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "No",
+          "latest_message": {
+            "role": "assistant",
+            "content": "No",
+            "stats": {
+              "total_tat_seconds": 38.172,
+              "input_tokens": 5228,
+              "output_tokens": 2,
+              "total_tokens": 5230,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 38.172,
+            "input_tokens": 5228,
+            "output_tokens": 2,
+            "total_tokens": 5230,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_004_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/4.jpg",
+        "expected": "no",
+        "actual": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched several chicken-related items (e.g., *WW RSPCA Chicken Drumsticks 2kg*, *Chickadees Chicken Snacks 90g*), but **all similarity scores were below the 0.5 threshold** (highest: 0.26). SQL confirmed past purchases of these items, but the embedding confidence was too low to definitively claim a match.",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+          "conversation": {
+            "id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T01:03:22.532Z",
+            "updated_at": "2026-05-15T01:04:12.755Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+              "conversation": {
+                "id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T01:03:22.532Z",
+                "updated_at": "2026-05-15T01:04:12.755Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched several chicken-related items (e.g., *WW RSPCA Chicken Drumsticks 2kg*, *Chickadees Chicken Snacks 90g*), but **all similarity scores were below the 0.5 threshold** (highest: 0.26). SQL confirmed past purchases of these items, but the embedding confidence was too low to definitively claim a match.",
+                "stats": {
+                  "total_tat_seconds": 61.855,
+                  "input_tokens": 4620,
+                  "output_tokens": 95,
+                  "total_tokens": 4715,
+                  "tool_calls": 3,
+                  "tools": [
+                    "search_item_vectors",
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/4.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+                "conversation": {
+                  "id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:03:22.532Z",
+                  "updated_at": "2026-05-15T01:03:22.532Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+                "conversation": {
+                  "id": "e836bcf3-d760-4a62-8ef1-ca75b2b300e6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:03:22.532Z",
+                  "updated_at": "2026-05-15T01:04:12.755Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched several chicken-related items (e.g., *WW RSPCA Chicken Drumsticks 2kg*, *Chickadees Chicken Snacks 90g*), but **all similarity scores were below the 0.5 threshold** (highest: 0.26). SQL confirmed past purchases of these items, but the embedding confidence was too low to definitively claim a match.",
+                  "stats": {
+                    "total_tat_seconds": 61.855,
+                    "input_tokens": 4620,
+                    "output_tokens": 95,
+                    "total_tokens": 4715,
+                    "tool_calls": 3,
+                    "tools": [
+                      "search_item_vectors",
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched several chicken-related items (e.g., *WW RSPCA Chicken Drumsticks 2kg*, *Chickadees Chicken Snacks 90g*), but **all similarity scores were below the 0.5 threshold** (highest: 0.26). SQL confirmed past purchases of these items, but the embedding confidence was too low to definitively claim a match.",
+          "latest_message": {
+            "role": "assistant",
+            "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched several chicken-related items (e.g., *WW RSPCA Chicken Drumsticks 2kg*, *Chickadees Chicken Snacks 90g*), but **all similarity scores were below the 0.5 threshold** (highest: 0.26). SQL confirmed past purchases of these items, but the embedding confidence was too low to definitively claim a match.",
+            "stats": {
+              "total_tat_seconds": 61.855,
+              "input_tokens": 4620,
+              "output_tokens": 95,
+              "total_tokens": 4715,
+              "tool_calls": 3,
+              "tools": [
+                "search_item_vectors",
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 61.855,
+            "input_tokens": 4620,
+            "output_tokens": 95,
+            "total_tokens": 4715,
+            "tool_calls": 3,
+            "tools_called": [
+              "search_item_vectors",
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_005_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/5.jpg",
+        "expected": "yes",
+        "actual": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched 8 item names, but none exceeded the **0.5 similarity threshold**. The closest match was *\"Palmolive Ultra Abac Lem Dishwash 950ml\"* (score: **0.45**), followed by *\"Balnea Handwash Antibac Lime 1L\"* (score: **0.34**). SQL confirmed purchases of these items (e.g., dishwash on 2026-03-25, handwash on 2026-04-18), but their scores fell below the required confidence level. Thus, the answer remains **no**.",
+        "passed": false,
+        "error": null,
+        "agent_response": {
+          "thread_id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+          "conversation": {
+            "id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T01:04:24.270Z",
+            "updated_at": "2026-05-15T01:05:10.040Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+              "conversation": {
+                "id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T01:04:24.270Z",
+                "updated_at": "2026-05-15T01:05:10.040Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched 8 item names, but none exceeded the **0.5 similarity threshold**. The closest match was *\"Palmolive Ultra Abac Lem Dishwash 950ml\"* (score: **0.45**), followed by *\"Balnea Handwash Antibac Lime 1L\"* (score: **0.34**). SQL confirmed purchases of these items (e.g., dishwash on 2026-03-25, handwash on 2026-04-18), but their scores fell below the required confidence level. Thus, the answer remains **no**.",
+                "stats": {
+                  "total_tat_seconds": 57.27,
+                  "input_tokens": 5018,
+                  "output_tokens": 147,
+                  "total_tokens": 5165,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/5.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+                "conversation": {
+                  "id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:04:24.270Z",
+                  "updated_at": "2026-05-15T01:04:24.270Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+                "conversation": {
+                  "id": "65af593a-dee7-49e8-9b6e-07ca6220712d",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T01:04:24.270Z",
+                  "updated_at": "2026-05-15T01:05:10.040Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched 8 item names, but none exceeded the **0.5 similarity threshold**. The closest match was *\"Palmolive Ultra Abac Lem Dishwash 950ml\"* (score: **0.45**), followed by *\"Balnea Handwash Antibac Lime 1L\"* (score: **0.34**). SQL confirmed purchases of these items (e.g., dishwash on 2026-03-25, handwash on 2026-04-18), but their scores fell below the required confidence level. Thus, the answer remains **no**.",
+                  "stats": {
+                    "total_tat_seconds": 57.27,
+                    "input_tokens": 5018,
+                    "output_tokens": 147,
+                    "total_tokens": 5165,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched 8 item names, but none exceeded the **0.5 similarity threshold**. The closest match was *\"Palmolive Ultra Abac Lem Dishwash 950ml\"* (score: **0.45**), followed by *\"Balnea Handwash Antibac Lime 1L\"* (score: **0.34**). SQL confirmed purchases of these items (e.g., dishwash on 2026-03-25, handwash on 2026-04-18), but their scores fell below the required confidence level. Thus, the answer remains **no**.",
+          "latest_message": {
+            "role": "assistant",
+            "content": "No\n\n**Retrieval notes for transparency:**\nThe uploaded image embedding matched 8 item names, but none exceeded the **0.5 similarity threshold**. The closest match was *\"Palmolive Ultra Abac Lem Dishwash 950ml\"* (score: **0.45**), followed by *\"Balnea Handwash Antibac Lime 1L\"* (score: **0.34**). SQL confirmed purchases of these items (e.g., dishwash on 2026-03-25, handwash on 2026-04-18), but their scores fell below the required confidence level. Thus, the answer remains **no**.",
+            "stats": {
+              "total_tat_seconds": 57.27,
+              "input_tokens": 5018,
+              "output_tokens": 147,
+              "total_tokens": 5165,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 57.27,
+            "input_tokens": 5018,
+            "output_tokens": 147,
+            "total_tokens": 5165,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      }
+    ]
+  },
+  "QF-3": {
+    "test_cases_passed": 1,
+    "test_cases_total": 2,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf3_001_april_18_receipts_and_contribution",
+        "prompt": "How much did i spend on 18th April , can you list the receipts and the total amount spent",
+        "expectation": "Receipts on 18th April 2026\nHousehold grocery spend (from receipts table):\n\nReceipt ID Store Date Items Total ($)\n25 THE FRUIT TEMPLE 2026-04-18 5 18.84\n20 Woolworths 2026-04-18 12 75.64\nTotal household spend for 18th April: $94.48\n\nPersonal Contribution (Splitwise/accounting)\nFrom me_expenses table (17th-18th April, accounting window):\n\nDescription Date Total ($) My Share ($)\nWooliez 2026-04-18 65.34 21.78\nVeg 2026-04-18 18.84 6.28\nMints + tonic water 2026-04-18 5.30 0.00\nTim tam 2026-04-18 5.00 0.00\nAccounting total for nearby entries: $94.48\nMy total contribution: $28.06\n\nReconciliation Notes\nThe household receipt total ($94.48) matches the sum of nearby Splitwise entries ($65.34 + $18.84 + $5.30 + $5.00 = $94.48) exactly.\nThe Woolworths receipt ($75.64) is split into two accounting rows: Wooliez ($65.34), Tim tam ($5.00), and Mints + tonic water ($5.30). The remaining $0.32 gap is within tolerance.\nThe THE FRUIT TEMPLE receipt ($18.84) matches the Veg accounting row ($18.84) exactly.\nReconciliation: Strong. All receipts are accounted for in Splitwise, and my share is $28.06.",
+        "actual": "Here are the receipts for **18th April 2026** and the total amount spent:\n\n| **Store**         | **Items** | **Total ($)** |\n|-------------------|----------:|--------------:|\n| THE FRUIT TEMPLE  | 5         | 18.84         |\n| Woolworths        | 12        | 75.64         |\n\n**Total spent on 18th April:** **$94.48**",
+        "passed": true,
+        "judge": {
+          "passed": true,
+          "judge_decision": "YES",
+          "judge_raw_response": "YES",
+          "judge_model": "mistral/mistral-large-latest",
+          "judge_telemetry": {
+            "latency_seconds": 1.214,
+            "input_tokens": 791,
+            "output_tokens": 2,
+            "total_tokens": 793
+          }
+        },
+        "error": null,
+        "agent_response": {
+          "thread_id": "878aae50-46f4-491a-b817-252d86a36493",
+          "conversation": {
+            "id": "878aae50-46f4-491a-b817-252d86a36493",
+            "title": "How much did i spend on 18th April , can you li...",
+            "created_at": "2026-05-15T01:05:10.046Z",
+            "updated_at": "2026-05-15T01:05:33.529Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "How much did i spend on 18th April , can you list the receipts and the total amount spent",
+              "thread_id": "878aae50-46f4-491a-b817-252d86a36493",
+              "conversation": {
+                "id": "878aae50-46f4-491a-b817-252d86a36493",
+                "title": "How much did i spend on 18th April , can you li...",
+                "created_at": "2026-05-15T01:05:10.046Z",
+                "updated_at": "2026-05-15T01:05:33.529Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "Here are the receipts for **18th April 2026** and the total amount spent:\n\n| **Store**         | **Items** | **Total ($)** |\n|-------------------|----------:|--------------:|\n| THE FRUIT TEMPLE  | 5         | 18.84         |\n| Woolworths        | 12        | 75.64         |\n\n**Total spent on 18th April:** **$94.48**",
+                "stats": {
+                  "total_tat_seconds": 23.481,
+                  "input_tokens": 3057,
+                  "output_tokens": 110,
+                  "total_tokens": 3167,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "878aae50-46f4-491a-b817-252d86a36493",
+                "conversation": {
+                  "id": "878aae50-46f4-491a-b817-252d86a36493",
+                  "title": "How much did i spend on 18th April , can you li...",
+                  "created_at": "2026-05-15T01:05:10.046Z",
+                  "updated_at": "2026-05-15T01:05:10.046Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "878aae50-46f4-491a-b817-252d86a36493",
+                "conversation": {
+                  "id": "878aae50-46f4-491a-b817-252d86a36493",
+                  "title": "How much did i spend on 18th April , can you li...",
+                  "created_at": "2026-05-15T01:05:10.046Z",
+                  "updated_at": "2026-05-15T01:05:33.529Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "Here are the receipts for **18th April 2026** and the total amount spent:\n\n| **Store**         | **Items** | **Total ($)** |\n|-------------------|----------:|--------------:|\n| THE FRUIT TEMPLE  | 5         | 18.84         |\n| Woolworths        | 12        | 75.64         |\n\n**Total spent on 18th April:** **$94.48**",
+                  "stats": {
+                    "total_tat_seconds": 23.481,
+                    "input_tokens": 3057,
+                    "output_tokens": 110,
+                    "total_tokens": 3167,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "Here are the receipts for **18th April 2026** and the total amount spent:\n\n| **Store**         | **Items** | **Total ($)** |\n|-------------------|----------:|--------------:|\n| THE FRUIT TEMPLE  | 5         | 18.84         |\n| Woolworths        | 12        | 75.64         |\n\n**Total spent on 18th April:** **$94.48**",
+          "latest_message": {
+            "role": "assistant",
+            "content": "Here are the receipts for **18th April 2026** and the total amount spent:\n\n| **Store**         | **Items** | **Total ($)** |\n|-------------------|----------:|--------------:|\n| THE FRUIT TEMPLE  | 5         | 18.84         |\n| Woolworths        | 12        | 75.64         |\n\n**Total spent on 18th April:** **$94.48**",
+            "stats": {
+              "total_tat_seconds": 23.481,
+              "input_tokens": 3057,
+              "output_tokens": 110,
+              "total_tokens": 3167,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 23.481,
+            "input_tokens": 3057,
+            "output_tokens": 110,
+            "total_tokens": 3167,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf3_002_march_fresh_veggies_trips",
+        "prompt": "What were all the fresh veggies shopping trips in March",
+        "expectation": "Here are the fresh vegetables shopping trips in March 2026, identified using semantic vector search for \"fresh vegetables shopping trips\" and confirmed via SQL:\n\nDate Store Items Total (AUD)\n2026-03-18 Woolworths 17 $85.36\n2026-03-18 THE FRUIT TEMPLE 6 $17.70\n2026-03-20 Woolworths 10 $57.17\n2026-03-20 THE FRUIT TEMPLE 6 $25.18\n2026-03-24 Woolworths 7 $37.20\n2026-03-25 THE FRUIT TEMPLE 2 $10.54\n2026-03-28 THE FRUIT TEMPLE 5 $17.92\n2026-03-31 Woolworths 18 $87.81\nHousehold total for March fresh veggies trips: $338.88 (sum of all 8 receipts).",
+        "actual": "Here are all the **fresh vegetables shopping trips** in **March 2026**, sorted by date and store:\n\n| Date       | Store            | Items | Total ($) |\n|------------|------------------|-------|-----------|\n| 2026-03-18 | THE FRUIT TEMPLE | 6     | 17.70     |\n| 2026-03-18 | Woolworths       | 17    | 85.36     |\n| 2026-03-20 | THE FRUIT TEMPLE | 6     | 25.18     |\n| 2026-03-20 | Woolworths       | 10    | 57.17     |\n| 2026-03-21 | Woolworths       | 2     | 3.30      |\n| 2026-03-24 | Woolworths       | 7     | 37.20     |\n| 2026-03-25 | THE FRUIT TEMPLE | 2     | 10.54     |\n| 2026-03-25 | Woolworths       | 3     | 14.15     |\n| 2026-03-28 | THE FRUIT TEMPLE | 5     | 17.92     |\n| 2026-03-28 | Woolworths       | 7     | 43.17     |\n| 2026-03-31 | Woolworths       | 18    | 87.81     |\n\n**Total spent on fresh veggies trips in March:** **$399.50**",
+        "passed": false,
+        "judge": {
+          "passed": false,
+          "judge_decision": "NO",
+          "judge_raw_response": "NO",
+          "judge_model": "mistral/mistral-large-latest",
+          "judge_telemetry": {
+            "latency_seconds": 1.137,
+            "input_tokens": 905,
+            "output_tokens": 2,
+            "total_tokens": 907
+          }
+        },
+        "error": null,
+        "agent_response": {
+          "thread_id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+          "conversation": {
+            "id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+            "title": "What were all the fresh veggies shopping trips...",
+            "created_at": "2026-05-15T01:06:54.213Z",
+            "updated_at": "2026-05-15T01:07:10.631Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "What were all the fresh veggies shopping trips in March",
+              "thread_id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+              "conversation": {
+                "id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+                "title": "What were all the fresh veggies shopping trips...",
+                "created_at": "2026-05-15T01:06:54.213Z",
+                "updated_at": "2026-05-15T01:07:10.631Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "Here are all the **fresh vegetables shopping trips** in **March 2026**, sorted by date and store:\n\n| Date       | Store            | Items | Total ($) |\n|------------|------------------|-------|-----------|\n| 2026-03-18 | THE FRUIT TEMPLE | 6     | 17.70     |\n| 2026-03-18 | Woolworths       | 17    | 85.36     |\n| 2026-03-20 | THE FRUIT TEMPLE | 6     | 25.18     |\n| 2026-03-20 | Woolworths       | 10    | 57.17     |\n| 2026-03-21 | Woolworths       | 2     | 3.30      |\n| 2026-03-24 | Woolworths       | 7     | 37.20     |\n| 2026-03-25 | THE FRUIT TEMPLE | 2     | 10.54     |\n| 2026-03-25 | Woolworths       | 3     | 14.15     |\n| 2026-03-28 | THE FRUIT TEMPLE | 5     | 17.92     |\n| 2026-03-28 | Woolworths       | 7     | 43.17     |\n| 2026-03-31 | Woolworths       | 18    | 87.81     |\n\n**Total spent on fresh veggies trips in March:** **$399.50**",
+                "stats": {
+                  "total_tat_seconds": 16.416,
+                  "input_tokens": 4670,
+                  "output_tokens": 417,
+                  "total_tokens": 5087,
+                  "tool_calls": 3,
+                  "tools": [
+                    "embed_receipt_query",
+                    "search_receipt_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+                "conversation": {
+                  "id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+                  "title": "What were all the fresh veggies shopping trips...",
+                  "created_at": "2026-05-15T01:06:54.213Z",
+                  "updated_at": "2026-05-15T01:06:54.213Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+                "conversation": {
+                  "id": "0db44e72-c52e-4cc0-90b7-95593ecbfe58",
+                  "title": "What were all the fresh veggies shopping trips...",
+                  "created_at": "2026-05-15T01:06:54.213Z",
+                  "updated_at": "2026-05-15T01:07:10.631Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "Here are all the **fresh vegetables shopping trips** in **March 2026**, sorted by date and store:\n\n| Date       | Store            | Items | Total ($) |\n|------------|------------------|-------|-----------|\n| 2026-03-18 | THE FRUIT TEMPLE | 6     | 17.70     |\n| 2026-03-18 | Woolworths       | 17    | 85.36     |\n| 2026-03-20 | THE FRUIT TEMPLE | 6     | 25.18     |\n| 2026-03-20 | Woolworths       | 10    | 57.17     |\n| 2026-03-21 | Woolworths       | 2     | 3.30      |\n| 2026-03-24 | Woolworths       | 7     | 37.20     |\n| 2026-03-25 | THE FRUIT TEMPLE | 2     | 10.54     |\n| 2026-03-25 | Woolworths       | 3     | 14.15     |\n| 2026-03-28 | THE FRUIT TEMPLE | 5     | 17.92     |\n| 2026-03-28 | Woolworths       | 7     | 43.17     |\n| 2026-03-31 | Woolworths       | 18    | 87.81     |\n\n**Total spent on fresh veggies trips in March:** **$399.50**",
+                  "stats": {
+                    "total_tat_seconds": 16.416,
+                    "input_tokens": 4670,
+                    "output_tokens": 417,
+                    "total_tokens": 5087,
+                    "tool_calls": 3,
+                    "tools": [
+                      "embed_receipt_query",
+                      "search_receipt_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "Here are all the **fresh vegetables shopping trips** in **March 2026**, sorted by date and store:\n\n| Date       | Store            | Items | Total ($) |\n|------------|------------------|-------|-----------|\n| 2026-03-18 | THE FRUIT TEMPLE | 6     | 17.70     |\n| 2026-03-18 | Woolworths       | 17    | 85.36     |\n| 2026-03-20 | THE FRUIT TEMPLE | 6     | 25.18     |\n| 2026-03-20 | Woolworths       | 10    | 57.17     |\n| 2026-03-21 | Woolworths       | 2     | 3.30      |\n| 2026-03-24 | Woolworths       | 7     | 37.20     |\n| 2026-03-25 | THE FRUIT TEMPLE | 2     | 10.54     |\n| 2026-03-25 | Woolworths       | 3     | 14.15     |\n| 2026-03-28 | THE FRUIT TEMPLE | 5     | 17.92     |\n| 2026-03-28 | Woolworths       | 7     | 43.17     |\n| 2026-03-31 | Woolworths       | 18    | 87.81     |\n\n**Total spent on fresh veggies trips in March:** **$399.50**",
+          "latest_message": {
+            "role": "assistant",
+            "content": "Here are all the **fresh vegetables shopping trips** in **March 2026**, sorted by date and store:\n\n| Date       | Store            | Items | Total ($) |\n|------------|------------------|-------|-----------|\n| 2026-03-18 | THE FRUIT TEMPLE | 6     | 17.70     |\n| 2026-03-18 | Woolworths       | 17    | 85.36     |\n| 2026-03-20 | THE FRUIT TEMPLE | 6     | 25.18     |\n| 2026-03-20 | Woolworths       | 10    | 57.17     |\n| 2026-03-21 | Woolworths       | 2     | 3.30      |\n| 2026-03-24 | Woolworths       | 7     | 37.20     |\n| 2026-03-25 | THE FRUIT TEMPLE | 2     | 10.54     |\n| 2026-03-25 | Woolworths       | 3     | 14.15     |\n| 2026-03-28 | THE FRUIT TEMPLE | 5     | 17.92     |\n| 2026-03-28 | Woolworths       | 7     | 43.17     |\n| 2026-03-31 | Woolworths       | 18    | 87.81     |\n\n**Total spent on fresh veggies trips in March:** **$399.50**",
+            "stats": {
+              "total_tat_seconds": 16.416,
+              "input_tokens": 4670,
+              "output_tokens": 417,
+              "total_tokens": 5087,
+              "tool_calls": 3,
+              "tools": [
+                "embed_receipt_query",
+                "search_receipt_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 16.416,
+            "input_tokens": 4670,
+            "output_tokens": 417,
+            "total_tokens": 5087,
+            "tool_calls": 3,
+            "tools_called": [
+              "embed_receipt_query",
+              "search_receipt_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      }
+    ],
+    "judge_model": "mistral/mistral-large-latest"
+  },
+  "QF-4": {
+    "test_cases_passed": 5,
+    "test_cases_total": 5,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf4_001_household_last_month_spend",
+        "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+        "expected": "643.91",
+        "actual": "643.91",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+          "conversation": {
+            "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+            "title": "In this conversation I am going to ask you real...",
+            "created_at": "2026-05-15T01:07:53.275Z",
+            "updated_at": "2026-05-15T01:08:15.523Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:15.523Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 22.247,
+                  "input_tokens": 2986,
+                  "output_tokens": 7,
+                  "total_tokens": 2993,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:07:53.275Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 22.247,
+                    "input_tokens": 2986,
+                    "output_tokens": 7,
+                    "total_tokens": 2993,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "643.91",
+          "latest_message": {
+            "role": "assistant",
+            "content": "643.91",
+            "stats": {
+              "total_tat_seconds": 22.247,
+              "input_tokens": 2986,
+              "output_tokens": 7,
+              "total_tokens": 2993,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 22.247,
+            "input_tokens": 2986,
+            "output_tokens": 7,
+            "total_tokens": 2993,
+            "tool_calls": 1,
+            "tools_called": [
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf4_002_last_month_trip_count",
+        "prompt": "How many grocery trips did we do in that month",
+        "expected": "19",
+        "actual": "19",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+          "conversation": {
+            "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+            "title": "In this conversation I am going to ask you real...",
+            "created_at": "2026-05-15T01:07:53.275Z",
+            "updated_at": "2026-05-15T01:08:59.659Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:15.523Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 22.247,
+                  "input_tokens": 2986,
+                  "output_tokens": 7,
+                  "total_tokens": 2993,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:07:53.275Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 22.247,
+                    "input_tokens": 2986,
+                    "output_tokens": 7,
+                    "total_tokens": 2993,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "How many grocery trips did we do in that month",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:59.659Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "19",
+                "stats": {
+                  "total_tat_seconds": 44.128,
+                  "input_tokens": 3142,
+                  "output_tokens": 3,
+                  "total_tokens": 3145,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "19",
+                  "stats": {
+                    "total_tat_seconds": 44.128,
+                    "input_tokens": 3142,
+                    "output_tokens": 3,
+                    "total_tokens": 3145,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "19",
+          "latest_message": {
+            "role": "assistant",
+            "content": "19",
+            "stats": {
+              "total_tat_seconds": 44.128,
+              "input_tokens": 3142,
+              "output_tokens": 3,
+              "total_tokens": 3145,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 66.375,
+            "input_tokens": 6128,
+            "output_tokens": 10,
+            "total_tokens": 6138,
+            "tool_calls": 2,
+            "tools_called": [
+              "query_finance_db",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 3,
+            "turns": 2
+          }
+        }
+      },
+      {
+        "id": "qf4_003_last_month_fruit_temple_trip_count",
+        "prompt": "how many of those were to THE FRUIT TEMPLE",
+        "expected": "6",
+        "actual": "6",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+          "conversation": {
+            "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+            "title": "In this conversation I am going to ask you real...",
+            "created_at": "2026-05-15T01:07:53.275Z",
+            "updated_at": "2026-05-15T01:09:21.368Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:15.523Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 22.247,
+                  "input_tokens": 2986,
+                  "output_tokens": 7,
+                  "total_tokens": 2993,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:07:53.275Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 22.247,
+                    "input_tokens": 2986,
+                    "output_tokens": 7,
+                    "total_tokens": 2993,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "How many grocery trips did we do in that month",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:59.659Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "19",
+                "stats": {
+                  "total_tat_seconds": 44.128,
+                  "input_tokens": 3142,
+                  "output_tokens": 3,
+                  "total_tokens": 3145,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "19",
+                  "stats": {
+                    "total_tat_seconds": 44.128,
+                    "input_tokens": 3142,
+                    "output_tokens": 3,
+                    "total_tokens": 3145,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "how many of those were to THE FRUIT TEMPLE",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:09:21.368Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "6",
+                "stats": {
+                  "total_tat_seconds": 21.701,
+                  "input_tokens": 3322,
+                  "output_tokens": 2,
+                  "total_tokens": 3324,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:21.368Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "6",
+                  "stats": {
+                    "total_tat_seconds": 21.701,
+                    "input_tokens": 3322,
+                    "output_tokens": 2,
+                    "total_tokens": 3324,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "6",
+          "latest_message": {
+            "role": "assistant",
+            "content": "6",
+            "stats": {
+              "total_tat_seconds": 21.701,
+              "input_tokens": 3322,
+              "output_tokens": 2,
+              "total_tokens": 3324,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 88.076,
+            "input_tokens": 9450,
+            "output_tokens": 12,
+            "total_tokens": 9462,
+            "tool_calls": 3,
+            "tools_called": [
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 4,
+            "turns": 3
+          }
+        }
+      },
+      {
+        "id": "qf4_004_last_month_woolworths_trip_count",
+        "prompt": "and to Woolworths ?",
+        "expected": "8",
+        "actual": "8",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+          "conversation": {
+            "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+            "title": "In this conversation I am going to ask you real...",
+            "created_at": "2026-05-15T01:07:53.275Z",
+            "updated_at": "2026-05-15T01:09:44.851Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:15.523Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 22.247,
+                  "input_tokens": 2986,
+                  "output_tokens": 7,
+                  "total_tokens": 2993,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:07:53.275Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 22.247,
+                    "input_tokens": 2986,
+                    "output_tokens": 7,
+                    "total_tokens": 2993,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "How many grocery trips did we do in that month",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:59.659Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "19",
+                "stats": {
+                  "total_tat_seconds": 44.128,
+                  "input_tokens": 3142,
+                  "output_tokens": 3,
+                  "total_tokens": 3145,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "19",
+                  "stats": {
+                    "total_tat_seconds": 44.128,
+                    "input_tokens": 3142,
+                    "output_tokens": 3,
+                    "total_tokens": 3145,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "how many of those were to THE FRUIT TEMPLE",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:09:21.368Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "6",
+                "stats": {
+                  "total_tat_seconds": 21.701,
+                  "input_tokens": 3322,
+                  "output_tokens": 2,
+                  "total_tokens": 3324,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:21.368Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "6",
+                  "stats": {
+                    "total_tat_seconds": 21.701,
+                    "input_tokens": 3322,
+                    "output_tokens": 2,
+                    "total_tokens": 3324,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "and to Woolworths ?",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:09:44.851Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "8",
+                "stats": {
+                  "total_tat_seconds": 23.475,
+                  "input_tokens": 3488,
+                  "output_tokens": 2,
+                  "total_tokens": 3490,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:21.368Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:44.851Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "8",
+                  "stats": {
+                    "total_tat_seconds": 23.475,
+                    "input_tokens": 3488,
+                    "output_tokens": 2,
+                    "total_tokens": 3490,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "8",
+          "latest_message": {
+            "role": "assistant",
+            "content": "8",
+            "stats": {
+              "total_tat_seconds": 23.475,
+              "input_tokens": 3488,
+              "output_tokens": 2,
+              "total_tokens": 3490,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 111.551,
+            "input_tokens": 12938,
+            "output_tokens": 14,
+            "total_tokens": 12952,
+            "tool_calls": 4,
+            "tools_called": [
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 5,
+            "turns": 4
+          }
+        }
+      },
+      {
+        "id": "qf4_005_last_month_woolworths_total",
+        "prompt": "and what's the total amount we spent at Woolworths that month",
+        "expected": "370.46",
+        "actual": "370.46",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+          "conversation": {
+            "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+            "title": "In this conversation I am going to ask you real...",
+            "created_at": "2026-05-15T01:07:53.275Z",
+            "updated_at": "2026-05-15T01:10:24.550Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "In this conversation I am going to ask you really specific and pointed questions about my grocery shopping based on the data you have. For the duration of this conversation only reply with the amount / number that answers the question and nothing else. To start, can you tell me how much money my household spent on groceries last month.",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:15.523Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "643.91",
+                "stats": {
+                  "total_tat_seconds": 22.247,
+                  "input_tokens": 2986,
+                  "output_tokens": 7,
+                  "total_tokens": 2993,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:07:53.275Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "643.91",
+                  "stats": {
+                    "total_tat_seconds": 22.247,
+                    "input_tokens": 2986,
+                    "output_tokens": 7,
+                    "total_tokens": 2993,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "How many grocery trips did we do in that month",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:08:59.659Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "19",
+                "stats": {
+                  "total_tat_seconds": 44.128,
+                  "input_tokens": 3142,
+                  "output_tokens": 3,
+                  "total_tokens": 3145,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:15.523Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "19",
+                  "stats": {
+                    "total_tat_seconds": 44.128,
+                    "input_tokens": 3142,
+                    "output_tokens": 3,
+                    "total_tokens": 3145,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "how many of those were to THE FRUIT TEMPLE",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:09:21.368Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "6",
+                "stats": {
+                  "total_tat_seconds": 21.701,
+                  "input_tokens": 3322,
+                  "output_tokens": 2,
+                  "total_tokens": 3324,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:08:59.659Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:21.368Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "6",
+                  "stats": {
+                    "total_tat_seconds": 21.701,
+                    "input_tokens": 3322,
+                    "output_tokens": 2,
+                    "total_tokens": 3324,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "and to Woolworths ?",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:09:44.851Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "8",
+                "stats": {
+                  "total_tat_seconds": 23.475,
+                  "input_tokens": 3488,
+                  "output_tokens": 2,
+                  "total_tokens": 3490,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:21.368Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:44.851Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "8",
+                  "stats": {
+                    "total_tat_seconds": 23.475,
+                    "input_tokens": 3488,
+                    "output_tokens": 2,
+                    "total_tokens": 3490,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            },
+            {
+              "prompt": "and what's the total amount we spent at Woolworths that month",
+              "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+              "conversation": {
+                "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "title": "In this conversation I am going to ask you real...",
+                "created_at": "2026-05-15T01:07:53.275Z",
+                "updated_at": "2026-05-15T01:10:24.550Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "370.46",
+                "stats": {
+                  "total_tat_seconds": 39.69,
+                  "input_tokens": 3707,
+                  "output_tokens": 7,
+                  "total_tokens": 3714,
+                  "tool_calls": 1,
+                  "tools": [
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": null,
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:09:44.851Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                "conversation": {
+                  "id": "1517f8fb-a5cc-4e2e-816a-66ee9ec5b2a9",
+                  "title": "In this conversation I am going to ask you real...",
+                  "created_at": "2026-05-15T01:07:53.275Z",
+                  "updated_at": "2026-05-15T01:10:24.550Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "370.46",
+                  "stats": {
+                    "total_tat_seconds": 39.69,
+                    "input_tokens": 3707,
+                    "output_tokens": 7,
+                    "total_tokens": 3714,
+                    "tool_calls": 1,
+                    "tools": [
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "370.46",
+          "latest_message": {
+            "role": "assistant",
+            "content": "370.46",
+            "stats": {
+              "total_tat_seconds": 39.69,
+              "input_tokens": 3707,
+              "output_tokens": 7,
+              "total_tokens": 3714,
+              "tool_calls": 1,
+              "tools": [
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 151.241,
+            "input_tokens": 16645,
+            "output_tokens": 21,
+            "total_tokens": 16666,
+            "tool_calls": 5,
+            "tools_called": [
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 7,
+            "turns": 5
+          }
+        }
+      }
+    ]
+  }
+}

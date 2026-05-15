@@ -140,6 +140,7 @@ async def chat_stream(payload: ChatRequest, request: Request) -> StreamingRespon
                 message=payload.message,
                 model_name=payload.model,
                 thread_id=payload.thread_id,
+                system_prompt=payload.system_prompt,
             ):
                 yield f"data: {json.dumps(event)}\n\n"
         except ValueError as exc:
@@ -165,6 +166,7 @@ async def chat_image_stream(
     model: str = Form(...),
     message: str = Form(default=""),
     thread_id: str | None = Form(default=None),
+    system_prompt: str | None = Form(default=None),
     image: UploadFile = File(...),
 ) -> StreamingResponse:
     service = chat_service(request)
@@ -176,6 +178,7 @@ async def chat_image_stream(
                 message=message,
                 model_name=model,
                 thread_id=thread_id,
+                system_prompt=system_prompt,
                 image_bytes=image_bytes,
                 image_filename=image.filename,
                 image_content_type=image.content_type,

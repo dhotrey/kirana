@@ -110,5 +110,5 @@ def test_invoke_model_retries_rate_limits(monkeypatch):
 
     assert response.content == "ok"
     assert model.calls == 3
-    assert sleeps == [10, 15]
+    assert sleeps == [15, 30]
     assert [event.attempt for event in events] == [1, 2]

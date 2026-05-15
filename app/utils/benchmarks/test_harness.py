@@ -48,7 +48,11 @@ def test_query_and_follow_up_accumulate_conversation_telemetry():
         base_url="http://testserver",
         transport=httpx.MockTransport(handler),
     )
-    benchmark = BenchmarkClient(model="mistral", client=client)
+    benchmark = BenchmarkClient(
+        model="mistral",
+        system_prompt="benchmark prompt",
+        client=client,
+    )
 
     response = benchmark.query("first prompt")
     response = response.follow_up("follow-up prompt")
@@ -71,7 +75,9 @@ def test_query_and_follow_up_accumulate_conversation_telemetry():
     first_payload = requests[0].read().decode()
     second_payload = requests[1].read().decode()
     assert '"thread_id":null' in first_payload
+    assert '"system_prompt":"benchmark prompt"' in first_payload
     assert '"thread_id":"thread-1"' in second_payload
+    assert '"system_prompt":"benchmark prompt"' in second_payload
 
 
 def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
@@ -92,7 +98,11 @@ def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
         base_url="http://testserver",
         transport=httpx.MockTransport(handler),
     )
-    benchmark = BenchmarkClient(model="mistral", client=client)
+    benchmark = BenchmarkClient(
+        model="mistral",
+        system_prompt="image benchmark prompt",
+        client=client,
+    )
 
     response = benchmark.query_image("Have I bought this?", image_path)
 
@@ -105,4 +115,6 @@ def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
     body = requests[0].read()
     assert b'name="model"' in body
     assert b'name="message"' in body
+    assert b'name="system_prompt"' in body
+    assert b"image benchmark prompt" in body
     assert b'name="image"; filename="item.jpg"' in body
