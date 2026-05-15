@@ -700,6 +700,11 @@ def parse_args() -> argparse.Namespace:
             "app/kirana_agent_tools_and_instruction_following.json."
         ),
     )
+    parser.add_argument(
+        "--no-tools",
+        action="store_true",
+        help="Run benchmarks without exposing SQL or Vectorize tools to the model.",
+    )
     return parser.parse_args()
 
 
@@ -733,7 +738,7 @@ def main() -> int:
     query_families = selected_query_families(args)
     log_progress(
         f"Running benchmark families: {', '.join(query_families)} "
-        f"with model={model}"
+        f"with model={model} tools_enabled={not args.no_tools}"
     )
     log_progress(f"Results file: {RESULTS_PATH}")
     if prompt_override is not None:
@@ -743,6 +748,7 @@ def main() -> int:
         base_url=BASE_URL,
         model=model,
         system_prompt=system_prompt,
+        tools_enabled=not args.no_tools,
     ) as benchmark:
         if "QF-1" in query_families:
             run_qf1(benchmark=benchmark, results=results, model=model)

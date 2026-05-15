@@ -44,3 +44,4 @@ class ChatRequest(BaseModel):
     model: str
     thread_id: str | None = None
     system_prompt: str | None = None
+    tools_enabled: bool = True

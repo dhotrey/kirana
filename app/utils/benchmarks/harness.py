@@ -92,12 +92,14 @@ class BenchmarkClient:
         base_url: str = "http://127.0.0.1:8000",
         model: str,
         system_prompt: str | None = None,
+        tools_enabled: bool = True,
         timeout: float | httpx.Timeout = 120.0,
         client: httpx.Client | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.system_prompt = system_prompt
+        self.tools_enabled = tools_enabled
         self._owns_client = client is None
         self._client = client or httpx.Client(base_url=self.base_url, timeout=timeout)
 
@@ -137,6 +139,7 @@ class BenchmarkClient:
             "message": prompt,
             "model": self.model,
             "thread_id": thread_id,
+            "tools_enabled": self.tools_enabled,
         }
         if self.system_prompt is not None:
             payload["system_prompt"] = self.system_prompt
@@ -186,6 +189,7 @@ class BenchmarkClient:
             mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
         )
         data = {"message": prompt, "model": self.model}
+        data["tools_enabled"] = str(self.tools_enabled).lower()
         if thread_id is not None:
             data["thread_id"] = thread_id
         if self.system_prompt is not None:

@@ -76,8 +76,34 @@ def test_query_and_follow_up_accumulate_conversation_telemetry():
     second_payload = requests[1].read().decode()
     assert '"thread_id":null' in first_payload
     assert '"system_prompt":"benchmark prompt"' in first_payload
+    assert '"tools_enabled":true' in first_payload
     assert '"thread_id":"thread-1"' in second_payload
     assert '"system_prompt":"benchmark prompt"' in second_payload
+    assert '"tools_enabled":true' in second_payload
+
+
+def test_query_can_disable_tools():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return _stream_response("thread-1", "answer", 1.0, [])
+
+    client = httpx.Client(
+        base_url="http://testserver",
+        transport=httpx.MockTransport(handler),
+    )
+    benchmark = BenchmarkClient(
+        model="mistral",
+        tools_enabled=False,
+        client=client,
+    )
+
+    response = benchmark.query("prompt")
+
+    assert response.tools_called == []
+    payload = requests[0].read().decode()
+    assert '"tools_enabled":false' in payload
 
 
 def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
@@ -115,6 +141,35 @@ def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
     body = requests[0].read()
     assert b'name="model"' in body
     assert b'name="message"' in body
+    assert b'name="tools_enabled"' in body
+    assert b"true" in body
     assert b'name="system_prompt"' in body
     assert b"image benchmark prompt" in body
     assert b'name="image"; filename="item.jpg"' in body
+
+
+def test_query_image_can_disable_tools(tmp_path: Path):
+    image_path = tmp_path / "item.jpg"
+    image_path.write_bytes(b"fake image bytes")
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return _stream_response("image-thread", "No", 2.0, [])
+
+    client = httpx.Client(
+        base_url="http://testserver",
+        transport=httpx.MockTransport(handler),
+    )
+    benchmark = BenchmarkClient(
+        model="mistral",
+        tools_enabled=False,
+        client=client,
+    )
+
+    response = benchmark.query_image("Have I bought this?", image_path)
+
+    assert response.tools_called == []
+    body = requests[0].read()
+    assert b'name="tools_enabled"' in body
+    assert b"false" in body

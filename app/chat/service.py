@@ -414,6 +414,7 @@ class ChatService:
         model_name: str,
         thread_id: str | None,
         system_prompt: str | None = None,
+        tools_enabled: bool = True,
         image_bytes: bytes | None = None,
         image_filename: str | None = None,
         image_content_type: str | None = None,
@@ -447,14 +448,16 @@ class ChatService:
                 query=message,
                 query_chars=len(message),
                 has_image=image_bytes is not None,
+                tools_enabled=tools_enabled,
                 streaming=True,
             )
 
         with span as chat_span:
             logger.info(
-                "chat stream request thread={} model={} chars={} query={!r}",
+                "chat stream request thread={} model={} tools_enabled={} chars={} query={!r}",
                 conversation.id,
                 model_name,
+                tools_enabled,
                 len(message),
                 message,
             )
@@ -467,6 +470,7 @@ class ChatService:
                     query=message,
                     query_chars=len(message),
                     has_image=image_bytes is not None,
+                    tools_enabled=tools_enabled,
                     streaming=True,
                 )
 
@@ -501,6 +505,7 @@ class ChatService:
                             model_name=model_name,
                             rate_limit_retry_callback=emit_retry,
                             system_prompt=system_prompt,
+                            tools_enabled=tools_enabled,
                         ),
                         stream_mode="messages",
                     ):
@@ -644,7 +649,8 @@ class ChatService:
         retry_callback = configurable.get("rate_limit_retry_callback")
         if not callable(retry_callback):
             retry_callback = None
-        if model_routes_via_gemini(model_identifier) and self._tools:
+        tools_enabled = configurable.get("tools_enabled", True) is not False
+        if model_routes_via_gemini(model_identifier) and self._tools and tools_enabled:
             return {
                 "messages": [
                     await self._gemini_agent_response(
@@ -657,7 +663,7 @@ class ChatService:
             }
 
         model = self._model(model_name)
-        if self._tools:
+        if self._tools and tools_enabled:
             model = model.bind_tools(self._tools)
         response = await _invoke_model_with_rate_limit_retry(
             model,
@@ -871,6 +877,7 @@ class ChatService:
         model_name: str | None = None,
         rate_limit_retry_callback: RateLimitRetryCallback | None = None,
         system_prompt: str | None = None,
+        tools_enabled: bool = True,
     ) -> dict[str, Any]:
         configurable: dict[str, Any] = {"thread_id": thread_id}
         if model_name is not None:
@@ -879,6 +886,7 @@ class ChatService:
             configurable["rate_limit_retry_callback"] = rate_limit_retry_callback
         if system_prompt is not None:
             configurable["system_prompt"] = system_prompt
+        configurable["tools_enabled"] = tools_enabled
         return {"configurable": configurable}
 
     @staticmethod
