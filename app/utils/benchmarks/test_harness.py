@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import httpx
 
 from utils.benchmarks import BenchmarkClient
@@ -70,3 +72,37 @@ def test_query_and_follow_up_accumulate_conversation_telemetry():
     second_payload = requests[1].read().decode()
     assert '"thread_id":null' in first_payload
     assert '"thread_id":"thread-1"' in second_payload
+
+
+def test_query_image_posts_multipart_and_records_image_path(tmp_path: Path):
+    image_path = tmp_path / "item.jpg"
+    image_path.write_bytes(b"fake image bytes")
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return _stream_response(
+            "image-thread",
+            "Yes",
+            3.0,
+            ["search_item_vectors", "query_finance_db"],
+        )
+
+    client = httpx.Client(
+        base_url="http://testserver",
+        transport=httpx.MockTransport(handler),
+    )
+    benchmark = BenchmarkClient(model="mistral", client=client)
+
+    response = benchmark.query_image("Have I bought this?", image_path)
+
+    assert response.content == "Yes"
+    assert response.thread_id == "image-thread"
+    assert response.tools_called == ["search_item_vectors", "query_finance_db"]
+    assert response.turns[0].image_path == str(image_path)
+    assert requests[0].url.path == "/api/chat/image/stream"
+    assert requests[0].headers["content-type"].startswith("multipart/form-data")
+    body = requests[0].read()
+    assert b'name="model"' in body
+    assert b'name="message"' in body
+    assert b'name="image"; filename="item.jpg"' in body

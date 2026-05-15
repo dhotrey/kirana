@@ -44,7 +44,7 @@ from utils.types import Config
 
 TITLE_MAX_CHARS = 48
 SYSTEM_PROMPT_NAME = "system_prompt"
-RATE_LIMIT_RETRY_DELAYS_SECONDS = (10, 15, 20)
+RATE_LIMIT_RETRY_DELAYS_SECONDS = (15, 30, 45, 60)
 MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 DEFAULT_IMAGE_QUERY = "Did I buy this item? Search the uploaded image against my receipts and show the evidence."
 

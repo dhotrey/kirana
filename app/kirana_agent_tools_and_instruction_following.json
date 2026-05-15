@@ -1992,5 +1992,639 @@
       }
     ],
     "judge_model": "mistral/mistral-large-latest"
+  },
+  "QF-2": {
+    "test_cases_passed": 4,
+    "test_cases_total": 5,
+    "model": "mistral",
+    "details": [
+      {
+        "id": "qf2_001_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/1.jpg",
+        "expected": "yes",
+        "actual": "**Yes.**\n\nThe item vector search returned **hommus dips** (e.g., *Yumis Dip Hommus 1kg Bucket*, *Hommus Dip 1kg*, *Willow Farm Hommus 1kg*) with scores below the 0.5 threshold, but SQL confirms these items were purchased on **2026-04-27**, **2026-04-20**, **2026-03-31**, and **2026-03-24** at Woolworths and ALDI. The uploaded image likely depicts a similar dip product.",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+          "conversation": {
+            "id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T00:00:34.669Z",
+            "updated_at": "2026-05-15T00:00:45.487Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+              "conversation": {
+                "id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T00:00:34.669Z",
+                "updated_at": "2026-05-15T00:00:45.487Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "**Yes.**\n\nThe item vector search returned **hommus dips** (e.g., *Yumis Dip Hommus 1kg Bucket*, *Hommus Dip 1kg*, *Willow Farm Hommus 1kg*) with scores below the 0.5 threshold, but SQL confirms these items were purchased on **2026-04-27**, **2026-04-20**, **2026-03-31**, and **2026-03-24** at Woolworths and ALDI. The uploaded image likely depicts a similar dip product.",
+                "stats": {
+                  "total_tat_seconds": 23.89,
+                  "input_tokens": 5158,
+                  "output_tokens": 135,
+                  "total_tokens": 5293,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 0
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/1.jpg",
+              "rate_limit_retries": [],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+                "conversation": {
+                  "id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:00:34.669Z",
+                  "updated_at": "2026-05-15T00:00:34.669Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+                "conversation": {
+                  "id": "7d1fffac-704b-4055-ab10-8bf99d36674c",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:00:34.669Z",
+                  "updated_at": "2026-05-15T00:00:45.487Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "**Yes.**\n\nThe item vector search returned **hommus dips** (e.g., *Yumis Dip Hommus 1kg Bucket*, *Hommus Dip 1kg*, *Willow Farm Hommus 1kg*) with scores below the 0.5 threshold, but SQL confirms these items were purchased on **2026-04-27**, **2026-04-20**, **2026-03-31**, and **2026-03-24** at Woolworths and ALDI. The uploaded image likely depicts a similar dip product.",
+                  "stats": {
+                    "total_tat_seconds": 23.89,
+                    "input_tokens": 5158,
+                    "output_tokens": 135,
+                    "total_tokens": 5293,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 0
+                  }
+                }
+              }
+            }
+          ],
+          "content": "**Yes.**\n\nThe item vector search returned **hommus dips** (e.g., *Yumis Dip Hommus 1kg Bucket*, *Hommus Dip 1kg*, *Willow Farm Hommus 1kg*) with scores below the 0.5 threshold, but SQL confirms these items were purchased on **2026-04-27**, **2026-04-20**, **2026-03-31**, and **2026-03-24** at Woolworths and ALDI. The uploaded image likely depicts a similar dip product.",
+          "latest_message": {
+            "role": "assistant",
+            "content": "**Yes.**\n\nThe item vector search returned **hommus dips** (e.g., *Yumis Dip Hommus 1kg Bucket*, *Hommus Dip 1kg*, *Willow Farm Hommus 1kg*) with scores below the 0.5 threshold, but SQL confirms these items were purchased on **2026-04-27**, **2026-04-20**, **2026-03-31**, and **2026-03-24** at Woolworths and ALDI. The uploaded image likely depicts a similar dip product.",
+            "stats": {
+              "total_tat_seconds": 23.89,
+              "input_tokens": 5158,
+              "output_tokens": 135,
+              "total_tokens": 5293,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 0
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 23.89,
+            "input_tokens": 5158,
+            "output_tokens": 135,
+            "total_tokens": 5293,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 0,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_002_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/2.jpg",
+        "expected": "yes",
+        "actual": "**yes**",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+          "conversation": {
+            "id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T00:00:57.705Z",
+            "updated_at": "2026-05-15T00:01:55.312Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+              "conversation": {
+                "id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T00:00:57.705Z",
+                "updated_at": "2026-05-15T00:01:55.312Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "**yes**",
+                "stats": {
+                  "total_tat_seconds": 69.81,
+                  "input_tokens": 4659,
+                  "output_tokens": 4,
+                  "total_tokens": 4663,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/2.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 2,
+                  "delay_seconds": 30,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+                "conversation": {
+                  "id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:00:57.705Z",
+                  "updated_at": "2026-05-15T00:00:57.705Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+                "conversation": {
+                  "id": "e0f2f0c1-dc6e-42ad-b70c-aa4bef0f1ac6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:00:57.705Z",
+                  "updated_at": "2026-05-15T00:01:55.312Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "**yes**",
+                  "stats": {
+                    "total_tat_seconds": 69.81,
+                    "input_tokens": 4659,
+                    "output_tokens": 4,
+                    "total_tokens": 4663,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "**yes**",
+          "latest_message": {
+            "role": "assistant",
+            "content": "**yes**",
+            "stats": {
+              "total_tat_seconds": 69.81,
+              "input_tokens": 4659,
+              "output_tokens": 4,
+              "total_tokens": 4663,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 69.81,
+            "input_tokens": 4659,
+            "output_tokens": 4,
+            "total_tokens": 4663,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_003_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/3.jpg",
+        "expected": "no",
+        "actual": "No.",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+          "conversation": {
+            "id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T00:02:07.393Z",
+            "updated_at": "2026-05-15T00:02:50.213Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+              "conversation": {
+                "id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T00:02:07.393Z",
+                "updated_at": "2026-05-15T00:02:50.213Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "No.",
+                "stats": {
+                  "total_tat_seconds": 54.883,
+                  "input_tokens": 5216,
+                  "output_tokens": 3,
+                  "total_tokens": 5219,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 2
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/3.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                },
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 2,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+                "conversation": {
+                  "id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:02:07.393Z",
+                  "updated_at": "2026-05-15T00:02:07.393Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+                "conversation": {
+                  "id": "e61e824b-6aa7-4bca-ab22-724f03cfc79b",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:02:07.393Z",
+                  "updated_at": "2026-05-15T00:02:50.213Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "No.",
+                  "stats": {
+                    "total_tat_seconds": 54.883,
+                    "input_tokens": 5216,
+                    "output_tokens": 3,
+                    "total_tokens": 5219,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 2
+                  }
+                }
+              }
+            }
+          ],
+          "content": "No.",
+          "latest_message": {
+            "role": "assistant",
+            "content": "No.",
+            "stats": {
+              "total_tat_seconds": 54.883,
+              "input_tokens": 5216,
+              "output_tokens": 3,
+              "total_tokens": 5219,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 2
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 54.883,
+            "input_tokens": 5216,
+            "output_tokens": 3,
+            "total_tokens": 5219,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 2,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_004_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/4.jpg",
+        "expected": "no",
+        "actual": "**No**\n\n*(Vectorize item scores for chicken drumsticks were all below the 0.5 similarity threshold, and the uploaded image embedding did not clear the required match strength.)*",
+        "passed": true,
+        "error": null,
+        "agent_response": {
+          "thread_id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+          "conversation": {
+            "id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T00:03:02.530Z",
+            "updated_at": "2026-05-15T00:03:29.396Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+              "conversation": {
+                "id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T00:03:02.530Z",
+                "updated_at": "2026-05-15T00:03:29.396Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "**No**\n\n*(Vectorize item scores for chicken drumsticks were all below the 0.5 similarity threshold, and the uploaded image embedding did not clear the required match strength.)*",
+                "stats": {
+                  "total_tat_seconds": 39.167,
+                  "input_tokens": 4524,
+                  "output_tokens": 39,
+                  "total_tokens": 4563,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/4.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+                "conversation": {
+                  "id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:03:02.530Z",
+                  "updated_at": "2026-05-15T00:03:02.530Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+                "conversation": {
+                  "id": "f8e14f85-9254-4a4f-bcfa-d42076926da0",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:03:02.530Z",
+                  "updated_at": "2026-05-15T00:03:29.396Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "**No**\n\n*(Vectorize item scores for chicken drumsticks were all below the 0.5 similarity threshold, and the uploaded image embedding did not clear the required match strength.)*",
+                  "stats": {
+                    "total_tat_seconds": 39.167,
+                    "input_tokens": 4524,
+                    "output_tokens": 39,
+                    "total_tokens": 4563,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "**No**\n\n*(Vectorize item scores for chicken drumsticks were all below the 0.5 similarity threshold, and the uploaded image embedding did not clear the required match strength.)*",
+          "latest_message": {
+            "role": "assistant",
+            "content": "**No**\n\n*(Vectorize item scores for chicken drumsticks were all below the 0.5 similarity threshold, and the uploaded image embedding did not clear the required match strength.)*",
+            "stats": {
+              "total_tat_seconds": 39.167,
+              "input_tokens": 4524,
+              "output_tokens": 39,
+              "total_tokens": 4563,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 39.167,
+            "input_tokens": 4524,
+            "output_tokens": 39,
+            "total_tokens": 4563,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      },
+      {
+        "id": "qf2_005_image_purchase_recall",
+        "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+        "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/5.jpg",
+        "expected": "yes",
+        "actual": "**No**\n\n_The highest-scoring item vector match (\"Palmolive Ultra Abac Lem Dishwash 950ml\") scored **0.45**, below the **0.5** threshold. No other item cleared the threshold, and SQL confirmed no relevant purchase._",
+        "passed": false,
+        "error": null,
+        "agent_response": {
+          "thread_id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+          "conversation": {
+            "id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+            "title": "Have I ever purchased something like this, only...",
+            "created_at": "2026-05-15T00:03:41.582Z",
+            "updated_at": "2026-05-15T00:04:08.709Z"
+          },
+          "model": "mistral",
+          "turns": [
+            {
+              "prompt": "Have I ever purchased something like this, only reply in a single word with a definitive yes or no",
+              "thread_id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+              "conversation": {
+                "id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+                "title": "Have I ever purchased something like this, only...",
+                "created_at": "2026-05-15T00:03:41.582Z",
+                "updated_at": "2026-05-15T00:04:08.709Z"
+              },
+              "message": {
+                "role": "assistant",
+                "content": "**No**\n\n_The highest-scoring item vector match (\"Palmolive Ultra Abac Lem Dishwash 950ml\") scored **0.45**, below the **0.5** threshold. No other item cleared the threshold, and SQL confirmed no relevant purchase._",
+                "stats": {
+                  "total_tat_seconds": 39.295,
+                  "input_tokens": 4936,
+                  "output_tokens": 59,
+                  "total_tokens": 4995,
+                  "tool_calls": 2,
+                  "tools": [
+                    "search_item_vectors",
+                    "query_finance_db"
+                  ],
+                  "rate_limit_retries": 1
+                }
+              },
+              "image_path": "/home/aryan/projects/kirana/app/utils/benchmarks/test-images/5.jpg",
+              "rate_limit_retries": [
+                {
+                  "type": "rate_limit_retry",
+                  "retry_count": 1,
+                  "retry_attempt": 1,
+                  "delay_seconds": 15,
+                  "max_retries": 4,
+                  "call": "agent"
+                }
+              ],
+              "raw_start_event": {
+                "type": "start",
+                "thread_id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+                "conversation": {
+                  "id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:03:41.582Z",
+                  "updated_at": "2026-05-15T00:03:41.582Z"
+                }
+              },
+              "raw_end_event": {
+                "type": "end",
+                "thread_id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+                "conversation": {
+                  "id": "3500d9a0-590d-408e-8499-ff5672e3fea6",
+                  "title": "Have I ever purchased something like this, only...",
+                  "created_at": "2026-05-15T00:03:41.582Z",
+                  "updated_at": "2026-05-15T00:04:08.709Z"
+                },
+                "message": {
+                  "role": "assistant",
+                  "content": "**No**\n\n_The highest-scoring item vector match (\"Palmolive Ultra Abac Lem Dishwash 950ml\") scored **0.45**, below the **0.5** threshold. No other item cleared the threshold, and SQL confirmed no relevant purchase._",
+                  "stats": {
+                    "total_tat_seconds": 39.295,
+                    "input_tokens": 4936,
+                    "output_tokens": 59,
+                    "total_tokens": 4995,
+                    "tool_calls": 2,
+                    "tools": [
+                      "search_item_vectors",
+                      "query_finance_db"
+                    ],
+                    "rate_limit_retries": 1
+                  }
+                }
+              }
+            }
+          ],
+          "content": "**No**\n\n_The highest-scoring item vector match (\"Palmolive Ultra Abac Lem Dishwash 950ml\") scored **0.45**, below the **0.5** threshold. No other item cleared the threshold, and SQL confirmed no relevant purchase._",
+          "latest_message": {
+            "role": "assistant",
+            "content": "**No**\n\n_The highest-scoring item vector match (\"Palmolive Ultra Abac Lem Dishwash 950ml\") scored **0.45**, below the **0.5** threshold. No other item cleared the threshold, and SQL confirmed no relevant purchase._",
+            "stats": {
+              "total_tat_seconds": 39.295,
+              "input_tokens": 4936,
+              "output_tokens": 59,
+              "total_tokens": 4995,
+              "tool_calls": 2,
+              "tools": [
+                "search_item_vectors",
+                "query_finance_db"
+              ],
+              "rate_limit_retries": 1
+            }
+          },
+          "telemetry": {
+            "latency_seconds": 39.295,
+            "input_tokens": 4936,
+            "output_tokens": 59,
+            "total_tokens": 4995,
+            "tool_calls": 2,
+            "tools_called": [
+              "search_item_vectors",
+              "query_finance_db"
+            ],
+            "rate_limit_retries": 1,
+            "turns": 1
+          }
+        }
+      }
+    ]
   }
 }

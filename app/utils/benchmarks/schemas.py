@@ -40,6 +40,7 @@ class AgentTurn(BaseModel):
     thread_id: str
     conversation: Conversation
     message: ChatMessage
+    image_path: str | None = None
     rate_limit_retries: list[RateLimitRetry] = Field(default_factory=list)
     raw_start_event: dict = Field(default_factory=dict)
     raw_end_event: dict = Field(default_factory=dict)

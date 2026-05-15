@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import time
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -23,7 +22,7 @@ BASE_URL = "http://127.0.0.1:8000"
 RESULTS_PATH = Path(__file__).with_name(
     "kirana_agent_tools_and_instruction_following.json"
 )
-SLEEP_SECONDS_BETWEEN_QUERIES = 30
+TEST_IMAGES_DIR = Path(__file__).parent / "utils" / "benchmarks" / "test-images"
 
 
 @dataclass(frozen=True)
@@ -43,6 +42,11 @@ class JudgedBenchmarkCase:
     id: str
     prompt: str
     expectation: str
+
+
+@dataclass(frozen=True)
+class ImageBenchmarkCase(BenchmarkCase):
+    image_path: Path
 
 
 QF1_CASES = [
@@ -85,6 +89,44 @@ QF1_CASES = [
             "Reply with just the number and nothing else."
         ),
         expected="6",
+    ),
+]
+
+IMAGE_PROMPT = (
+    "Have I ever purchased something like this, only reply in a single word "
+    "with a definitive yes or no"
+)
+
+QF2_CASES = [
+    ImageBenchmarkCase(
+        id="qf2_001_image_purchase_recall",
+        prompt=IMAGE_PROMPT,
+        expected="yes",
+        image_path=TEST_IMAGES_DIR / "1.jpg",
+    ),
+    ImageBenchmarkCase(
+        id="qf2_002_image_purchase_recall",
+        prompt=IMAGE_PROMPT,
+        expected="yes",
+        image_path=TEST_IMAGES_DIR / "2.jpg",
+    ),
+    ImageBenchmarkCase(
+        id="qf2_003_image_purchase_recall",
+        prompt=IMAGE_PROMPT,
+        expected="no",
+        image_path=TEST_IMAGES_DIR / "3.jpg",
+    ),
+    ImageBenchmarkCase(
+        id="qf2_004_image_purchase_recall",
+        prompt=IMAGE_PROMPT,
+        expected="no",
+        image_path=TEST_IMAGES_DIR / "4.jpg",
+    ),
+    ImageBenchmarkCase(
+        id="qf2_005_image_purchase_recall",
+        prompt=IMAGE_PROMPT,
+        expected="yes",
+        image_path=TEST_IMAGES_DIR / "5.jpg",
     ),
 ]
 
@@ -213,6 +255,12 @@ def normalize_numeric_answer(value: str) -> Decimal | None:
         return None
 
 
+def normalize_yes_no_answer(value: str) -> str | None:
+    normalized = value.strip().lower()
+    match = re.search(r"\b(yes|no)\b", normalized)
+    return match.group(1) if match else None
+
+
 def run_case(benchmark: BenchmarkClient, case: BenchmarkCase) -> dict[str, Any]:
     try:
         response = benchmark.query(case.prompt)
@@ -236,6 +284,37 @@ def run_case(benchmark: BenchmarkClient, case: BenchmarkCase) -> dict[str, Any]:
         "expected": case.expected,
         "actual": actual,
         "passed": actual_number == expected_number,
+        "agent_response": response.model_dump(),
+    }
+
+
+def run_image_case(
+    benchmark: BenchmarkClient, case: ImageBenchmarkCase
+) -> dict[str, Any]:
+    try:
+        response = benchmark.query_image(case.prompt, case.image_path)
+    except Exception as exc:
+        return {
+            "id": case.id,
+            "prompt": case.prompt,
+            "image_path": str(case.image_path),
+            "expected": case.expected,
+            "actual": None,
+            "passed": False,
+            "error": str(exc),
+            "agent_response": None,
+        }
+
+    actual = response.content.strip()
+    return {
+        "id": case.id,
+        "prompt": case.prompt,
+        "image_path": str(case.image_path),
+        "expected": case.expected,
+        "actual": actual,
+        "passed": normalize_yes_no_answer(actual)
+        == normalize_yes_no_answer(case.expected),
+        "error": None,
         "agent_response": response.model_dump(),
     }
 
@@ -350,6 +429,10 @@ def write_results(results: dict[str, Any]) -> None:
     )
 
 
+def log_progress(message: str) -> None:
+    print(message, flush=True)
+
+
 def qf_result_template(*, model: str, total: int) -> dict[str, Any]:
     return {
         "test_cases_passed": 0,
@@ -366,14 +449,60 @@ def run_qf1(
     model: str,
 ) -> None:
     results["QF-1"] = qf_result_template(model=model, total=len(QF1_CASES))
+    log_progress(f"\nRunning QF-1: {len(QF1_CASES)} test cases")
 
-    for case in QF1_CASES:
+    for index, case in enumerate(QF1_CASES, start=1):
+        log_progress(f"QF-1 {index}/{len(QF1_CASES)} running: {case.id}")
         case_result = run_case(benchmark, case)
         results["QF-1"]["details"].append(case_result)
         if case_result["passed"]:
             results["QF-1"]["test_cases_passed"] += 1
         write_results(results)
-        time.sleep(SLEEP_SECONDS_BETWEEN_QUERIES)
+        status = "PASS" if case_result["passed"] else "FAIL"
+        log_progress(
+            f"QF-1 {index}/{len(QF1_CASES)} {status}: "
+            f"actual={case_result['actual']!r}"
+        )
+        log_progress(f"Wrote results to {RESULTS_PATH}")
+
+    log_progress(
+        "Finished QF-1: "
+        f"{results['QF-1']['test_cases_passed']}/{results['QF-1']['test_cases_total']} passed"
+    )
+
+
+def run_qf2(
+    *,
+    benchmark: BenchmarkClient,
+    results: dict[str, Any],
+    model: str,
+) -> None:
+    results["QF-2"] = qf_result_template(model=model, total=len(QF2_CASES))
+    log_progress(f"\nRunning QF-2: {len(QF2_CASES)} image test cases")
+
+    for index, case in enumerate(QF2_CASES, start=1):
+        log_progress(
+            f"QF-2 {index}/{len(QF2_CASES)} running: "
+            f"{case.id} image={case.image_path.name}"
+        )
+        case_result = run_image_case(benchmark, case)
+        results["QF-2"]["details"].append(case_result)
+        if case_result["passed"]:
+            results["QF-2"]["test_cases_passed"] += 1
+        write_results(results)
+        status = "PASS" if case_result["passed"] else "FAIL"
+        log_progress(
+            f"QF-2 {index}/{len(QF2_CASES)} {status}: "
+            f"expected={case.expected!r} actual={case_result['actual']!r}"
+        )
+        if case_result.get("error"):
+            log_progress(f"QF-2 {index}/{len(QF2_CASES)} error: {case_result['error']}")
+        log_progress(f"Wrote results to {RESULTS_PATH}")
+
+    log_progress(
+        "Finished QF-2: "
+        f"{results['QF-2']['test_cases_passed']}/{results['QF-2']['test_cases_total']} passed"
+    )
 
 
 def run_qf3(
@@ -386,8 +515,10 @@ def run_qf3(
     judge_model_identifier = cfg.kirana.model_identifiers[model]
     results["QF-3"] = qf_result_template(model=model, total=len(QF3_CASES))
     results["QF-3"]["judge_model"] = judge_model_identifier
+    log_progress(f"\nRunning QF-3: {len(QF3_CASES)} test cases")
 
-    for case in QF3_CASES:
+    for index, case in enumerate(QF3_CASES, start=1):
+        log_progress(f"QF-3 {index}/{len(QF3_CASES)} running: {case.id}")
         try:
             response = benchmark.query(case.prompt)
         except Exception as exc:
@@ -430,7 +561,18 @@ def run_qf3(
         if case_result["passed"]:
             results["QF-3"]["test_cases_passed"] += 1
         write_results(results)
-        time.sleep(SLEEP_SECONDS_BETWEEN_QUERIES)
+        status = "PASS" if case_result["passed"] else "FAIL"
+        judge_decision = (case_result.get("judge") or {}).get("judge_decision")
+        judge_suffix = f" judge={judge_decision}" if judge_decision else ""
+        log_progress(f"QF-3 {index}/{len(QF3_CASES)} {status}:{judge_suffix}")
+        if case_result.get("error"):
+            log_progress(f"QF-3 {index}/{len(QF3_CASES)} error: {case_result['error']}")
+        log_progress(f"Wrote results to {RESULTS_PATH}")
+
+    log_progress(
+        "Finished QF-3: "
+        f"{results['QF-3']['test_cases_passed']}/{results['QF-3']['test_cases_total']} passed"
+    )
 
 
 def run_qf4(
@@ -441,8 +583,13 @@ def run_qf4(
 ) -> None:
     results["QF-4"] = qf_result_template(model=model, total=len(QF4_CASES))
     response = None
+    log_progress(f"\nRunning QF-4: {len(QF4_CASES)} test cases")
 
-    for case in QF4_CASES:
+    for index, case in enumerate(QF4_CASES, start=1):
+        turn_type = "follow-up" if case.is_follow_up else "fresh query"
+        log_progress(
+            f"QF-4 {index}/{len(QF4_CASES)} running: {case.id} ({turn_type})"
+        )
         try:
             if case.is_follow_up and response is None:
                 raise RuntimeError("cannot run follow-up before conversation starts")
@@ -468,12 +615,25 @@ def run_qf4(
         if case_result["passed"]:
             results["QF-4"]["test_cases_passed"] += 1
         write_results(results)
-        time.sleep(SLEEP_SECONDS_BETWEEN_QUERIES)
+        status = "PASS" if case_result["passed"] else "FAIL"
+        log_progress(
+            f"QF-4 {index}/{len(QF4_CASES)} {status}: "
+            f"actual={case_result['actual']!r}"
+        )
+        if case_result.get("error"):
+            log_progress(f"QF-4 {index}/{len(QF4_CASES)} error: {case_result['error']}")
+        log_progress(f"Wrote results to {RESULTS_PATH}")
+
+    log_progress(
+        "Finished QF-4: "
+        f"{results['QF-4']['test_cases_passed']}/{results['QF-4']['test_cases_total']} passed"
+    )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Kirana agent benchmarks.")
     parser.add_argument("--QF1", action="store_true", help="Run QF1 benchmarks.")
+    parser.add_argument("--QF2", action="store_true", help="Run QF2 image benchmarks.")
     parser.add_argument("--QF3", action="store_true", help="Run QF3 benchmarks.")
     parser.add_argument("--QF4", action="store_true", help="Run QF4 benchmarks.")
     parser.add_argument(
@@ -486,10 +646,12 @@ def parse_args() -> argparse.Namespace:
 
 def selected_query_families(args: argparse.Namespace) -> list[str]:
     if args.all:
-        return ["QF-1", "QF-3", "QF-4"]
+        return ["QF-1", "QF-2", "QF-3", "QF-4"]
     selected = []
     if args.QF1:
         selected.append("QF-1")
+    if args.QF2:
+        selected.append("QF-2")
     if args.QF3:
         selected.append("QF-3")
     if args.QF4:
@@ -503,15 +665,23 @@ def main() -> int:
     model = cfg.kirana.available_models[0]
     results = load_existing_results()
     query_families = selected_query_families(args)
+    log_progress(
+        f"Running benchmark families: {', '.join(query_families)} "
+        f"with model={model}"
+    )
+    log_progress(f"Results file: {RESULTS_PATH}")
 
     with BenchmarkClient(base_url=BASE_URL, model=model) as benchmark:
         if "QF-1" in query_families:
             run_qf1(benchmark=benchmark, results=results, model=model)
+        if "QF-2" in query_families:
+            run_qf2(benchmark=benchmark, results=results, model=model)
         if "QF-3" in query_families:
             run_qf3(benchmark=benchmark, results=results, model=model, cfg=cfg)
         if "QF-4" in query_families:
             run_qf4(benchmark=benchmark, results=results, model=model)
 
+    log_progress("\nBenchmark run complete")
     return 0
 
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -112,6 +114,16 @@ class BenchmarkClient:
 
         return self._query(prompt=prompt, thread_id=None, prior_turns=[])
 
+    def query_image(self, prompt: str, image_path: str | Path) -> AgentResponse:
+        """Start a fresh image conversation and return the first agent response."""
+
+        return self._query_image(
+            prompt=prompt,
+            image_path=Path(image_path),
+            thread_id=None,
+            prior_turns=[],
+        )
+
     def _query(
         self,
         *,
@@ -134,10 +146,63 @@ class BenchmarkClient:
             prior_turns=prior_turns,
         )
 
+    def _query_image(
+        self,
+        *,
+        prompt: str,
+        image_path: Path,
+        thread_id: str | None,
+        prior_turns: list[AgentTurn],
+    ) -> AgentResponse:
+        events = list(
+            self._stream_image_chat_events(
+                prompt=prompt,
+                image_path=image_path,
+                thread_id=thread_id,
+            )
+        )
+        return self._response_from_events(
+            prompt=prompt,
+            events=events,
+            prior_turns=prior_turns,
+            image_path=str(image_path),
+        )
+
     def _stream_chat_events(self, payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         with self._client.stream("POST", "/api/chat/stream", json=payload) as response:
             response.raise_for_status()
             yield from _iter_sse_json(response.iter_text())
+
+    def _stream_image_chat_events(
+        self,
+        *,
+        prompt: str,
+        image_path: Path,
+        thread_id: str | None,
+    ) -> Iterator[dict[str, Any]]:
+        content_type = (
+            mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
+        )
+        data = {"message": prompt, "model": self.model}
+        if thread_id is not None:
+            data["thread_id"] = thread_id
+
+        with image_path.open("rb") as image_file:
+            files = {
+                "image": (
+                    image_path.name,
+                    image_file,
+                    content_type,
+                )
+            }
+            with self._client.stream(
+                "POST",
+                "/api/chat/image/stream",
+                data=data,
+                files=files,
+            ) as response:
+                response.raise_for_status()
+                yield from _iter_sse_json(response.iter_text())
 
     def _response_from_events(
         self,
@@ -145,6 +210,7 @@ class BenchmarkClient:
         prompt: str,
         events: list[dict[str, Any]],
         prior_turns: list[AgentTurn],
+        image_path: str | None = None,
     ) -> AgentResponse:
         start_event: dict[str, Any] | None = None
         end_event: dict[str, Any] | None = None
@@ -181,6 +247,7 @@ class BenchmarkClient:
             thread_id=thread_id,
             conversation=conversation,
             message=message,
+            image_path=image_path,
             rate_limit_retries=retry_events,
             raw_start_event=start_event or {},
             raw_end_event=end_event,

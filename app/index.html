@@ -218,6 +218,22 @@
         border-color: #b7ded6;
       }
 
+      .message.with-image {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 96px;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .message-image {
+        width: 96px;
+        aspect-ratio: 1;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        border-radius: 6px;
+        object-fit: cover;
+        background: white;
+      }
+
       .message.assistant {
         align-self: flex-start;
         background: var(--assistant);
@@ -449,6 +465,58 @@
         opacity: 0.58;
       }
 
+      .image-preview {
+        display: none;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        width: min(520px, 100%);
+        margin-top: 10px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+      }
+
+      .image-preview.visible {
+        display: grid;
+      }
+
+      .image-preview img {
+        width: 56px;
+        aspect-ratio: 1;
+        border-radius: 6px;
+        object-fit: cover;
+        background: #f7f4ee;
+      }
+
+      .image-preview-name {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 650;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .remove-preview {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffefa;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .remove-preview:hover {
+        color: #b91c1c;
+        border-color: #fecaca;
+      }
+
       .status {
         min-height: 20px;
         margin-top: 8px;
@@ -524,6 +592,19 @@
             ></textarea>
             <button class="send-button" id="sendButton" type="submit">Send</button>
           </div>
+          <div class="image-preview" id="imagePreview" aria-live="polite">
+            <img id="imagePreviewImg" alt="" />
+            <div class="image-preview-name" id="imagePreviewName"></div>
+            <button
+              class="remove-preview"
+              id="removeImage"
+              type="button"
+              title="Remove image"
+              aria-label="Remove image"
+            >
+              ×
+            </button>
+          </div>
           <div class="status" id="status"></div>
         </form>
       </section>
@@ -535,6 +616,7 @@
         conversations: [],
         sending: false,
         selectedImage: null,
+        selectedImageUrl: null,
       };
 
       const els = {
@@ -545,6 +627,10 @@
         composer: document.querySelector("#composer"),
         modelSelect: document.querySelector("#modelSelect"),
         imageInput: document.querySelector("#imageInput"),
+        imagePreview: document.querySelector("#imagePreview"),
+        imagePreviewImg: document.querySelector("#imagePreviewImg"),
+        imagePreviewName: document.querySelector("#imagePreviewName"),
+        removeImage: document.querySelector("#removeImage"),
         messageInput: document.querySelector("#messageInput"),
         sendButton: document.querySelector("#sendButton"),
         status: document.querySelector("#status"),
@@ -567,6 +653,27 @@
 
       function setStatus(text) {
         els.status.textContent = text || "";
+      }
+
+      function clearSelectedImage({ revoke = true } = {}) {
+        if (revoke && state.selectedImageUrl) {
+          URL.revokeObjectURL(state.selectedImageUrl);
+        }
+        state.selectedImage = null;
+        state.selectedImageUrl = null;
+        els.imageInput.value = "";
+        els.imagePreview.classList.remove("visible");
+        els.imagePreviewImg.removeAttribute("src");
+        els.imagePreviewName.textContent = "";
+      }
+
+      function showSelectedImage(file) {
+        clearSelectedImage();
+        state.selectedImage = file;
+        state.selectedImageUrl = URL.createObjectURL(file);
+        els.imagePreviewImg.src = state.selectedImageUrl;
+        els.imagePreviewName.textContent = file.name;
+        els.imagePreview.classList.add("visible");
       }
 
       function renderConversations() {
@@ -1016,6 +1123,15 @@
         node.className = `message ${message.role}`;
         if (message.role === "assistant") {
           node.append(renderMarkdown(message.content));
+        } else if (message.imageUrl) {
+          node.classList.add("with-image");
+          const text = document.createElement("div");
+          text.textContent = message.content;
+          const image = document.createElement("img");
+          image.className = "message-image";
+          image.src = message.imageUrl;
+          image.alt = message.imageName ? `Uploaded image: ${message.imageName}` : "Uploaded image";
+          node.append(text, image);
         } else {
           node.textContent = message.content;
         }
@@ -1189,9 +1305,18 @@
         state.sending = true;
         els.sendButton.disabled = true;
         els.messageInput.value = "";
-        state.selectedImage = null;
-        els.imageInput.value = "";
-        appendMessage("user", image ? `${text || "Search this image"}\n[Image: ${image.name}]` : text);
+        const imageUrl = state.selectedImageUrl;
+        clearSelectedImage({ revoke: false });
+        appendMessage(
+          image
+            ? {
+                role: "user",
+                content: text || "Search this image",
+                imageUrl,
+                imageName: image.name,
+              }
+            : { role: "user", content: text },
+        );
         setStatus("Thinking...");
 
         const streamingMessage = appendStreamingAssistant();
@@ -1267,7 +1392,7 @@
       async function uploadImage(event) {
         const file = event.target.files && event.target.files[0];
         if (!file || state.sending) return;
-        state.selectedImage = file;
+        showSelectedImage(file);
         setStatus(`Attached image: ${file.name}`);
         els.messageInput.focus();
       }
@@ -1275,6 +1400,11 @@
       els.newConversation.addEventListener("click", newConversation);
       els.composer.addEventListener("submit", sendMessage);
       els.imageInput.addEventListener("change", uploadImage);
+      els.removeImage.addEventListener("click", () => {
+        clearSelectedImage();
+        setStatus("");
+        els.messageInput.focus();
+      });
       els.messageInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
