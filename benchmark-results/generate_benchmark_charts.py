@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 
 ROOT = Path(__file__).resolve().parent
+CHARTS_DIR = ROOT / "charts"
 
 CONDITIONS = {
     "Plain LLM\n(no tools)": ROOT / "kirana-agent-raw-no-tools.json",
@@ -114,7 +115,7 @@ def save_success_chart(results: dict[str, dict[str, Any]]) -> None:
     ax.legend()
     add_value_labels(ax, "%.0f%%")
     fig.tight_layout()
-    fig.savefig(ROOT / "task_success_rate_by_qf.png", dpi=200)
+    fig.savefig(CHARTS_DIR / "task_success_rate_by_qf.png", dpi=200)
     plt.close(fig)
 
 
@@ -135,7 +136,7 @@ def save_condition_metric_chart(
     ax.grid(axis="y", linestyle="--", linewidth=0.6, alpha=0.5)
     add_value_labels(ax, "%.2f")
     fig.tight_layout()
-    fig.savefig(ROOT / output_name, dpi=200)
+    fig.savefig(CHARTS_DIR / output_name, dpi=200)
     plt.close(fig)
 
 
@@ -168,7 +169,7 @@ def save_token_breakdown_chart(results: dict[str, dict[str, Any]]) -> None:
         ax.text(idx, total, f"{total:,.0f}", ha="center", va="bottom", fontsize=8)
 
     fig.tight_layout()
-    fig.savefig(ROOT / "token_breakdown_by_condition.png", dpi=200)
+    fig.savefig(CHARTS_DIR / "token_breakdown_by_condition.png", dpi=200)
     plt.close(fig)
 
 
@@ -183,7 +184,7 @@ def save_tokens_per_success_chart(results: dict[str, dict[str, Any]]) -> None:
     ax.grid(axis="y", linestyle="--", linewidth=0.6, alpha=0.5)
     add_value_labels(ax, "%.0f")
     fig.tight_layout()
-    fig.savefig(ROOT / "tokens_per_successful_answer.png", dpi=200)
+    fig.savefig(CHARTS_DIR / "tokens_per_successful_answer.png", dpi=200)
     plt.close(fig)
 
 
@@ -208,11 +209,12 @@ def save_accuracy_cost_frontier(results: dict[str, dict[str, Any]]) -> None:
     ax.set_ylim(0, 105)
     ax.grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
     fig.tight_layout()
-    fig.savefig(ROOT / "accuracy_cost_frontier.png", dpi=200)
+    fig.savefig(CHARTS_DIR / "accuracy_cost_frontier.png", dpi=200)
     plt.close(fig)
 
 
 def main() -> None:
+    CHARTS_DIR.mkdir(parents=True, exist_ok=True)
     results = {label: load_result(path) for label, path in CONDITIONS.items()}
 
     save_success_chart(results)
@@ -241,13 +243,7 @@ def main() -> None:
     save_tokens_per_success_chart(results)
     save_accuracy_cost_frontier(results)
 
-    print("Saved task_success_rate_by_qf.png")
-    print("Saved average_latency_by_condition.png")
-    print("Saved average_tool_calls_by_condition.png")
-    print("Saved average_tokens_by_condition.png")
-    print("Saved token_breakdown_by_condition.png")
-    print("Saved tokens_per_successful_answer.png")
-    print("Saved accuracy_cost_frontier.png")
+    print(f"Saved charts to {CHARTS_DIR}")
 
 
 if __name__ == "__main__":

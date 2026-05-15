@@ -74,6 +74,25 @@ This index is intentionally separate from the receipt-summary index. Uploaded im
 
 ---
 
+## How to Run Splitwise Import
+
+Configure the CSV path in `app/config.toml`:
+
+```toml
+[knowledge_base]
+splitwise_csv_path = "../knowledge-base/splitwise/splitwise-export-26-04-2026.csv"
+```
+
+Then run from `app/`:
+
+```sh
+uv run python ingest_kb.py
+```
+
+The importer reads the configured CSV, skips empty rows and rows without a cost, converts money fields to integer cents, and inserts batched rows into the `splits` table. It expects `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID` to be available in `app/.env` or the shell.
+
+---
+
 ## Receipt CLI Application Flow
 
 ```mermaid

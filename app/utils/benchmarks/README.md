@@ -12,6 +12,15 @@ Run the app first from `app/`:
 uv run python main.py
 ```
 
+Run the repository benchmark CLI from a second shell in `app/`:
+
+```sh
+uv run python bench.py --all
+uv run python bench.py --QF1
+uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-raw-no-tools.json
+uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-results/kirana_agent_icl.json
+```
+
 Then use the harness:
 
 ```python

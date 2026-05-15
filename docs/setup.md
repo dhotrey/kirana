@@ -8,6 +8,8 @@ uv sync
 uv run python setup.py
 ```
 
+`setup.py` is intended to be safe to rerun for schema creation, metadata/index setup, and an existing Tigris bucket. If `KIRANA_DB_ID` is unset and a D1 database with the configured name already exists, set `KIRANA_DB_ID` in `app/.env` and rerun the script.
+
 ## Required `.env`
 
 Create `app/.env` with:
@@ -35,6 +37,10 @@ KIRANA_DB_ID=<d1-database-id>
 - `CLOUDFLARE_AI_GATEWAY_API_TOKEN`: Cloudflare AI Gateway authentication token created from the gateway settings page after `setup.py` creates the gateway.
 - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Tigris dashboard access keys. The setup uses Tigris' S3-compatible API endpoint from `app/config.toml`.
 - `KIRANA_DB_ID`: Cloudflare D1 database UUID. Leave unset for a fresh setup; the script creates the D1 database and appends the generated ID to `.env`.
+
+Optional runtime environment:
+
+- `KIRANA_DISABLE_LOGFIRE=1`: disables Logfire instrumentation for local runs or smoke checks.
 
 ## Resources Created
 
@@ -128,10 +134,26 @@ Provider keys are stored in Cloudflare's AI Gateway/Secrets Store configuration.
 
 ### Tigris Object Store
 
-Creates the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
+Creates or reuses the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
 
 - S3 endpoint: `https://t3.storage.dev`
 - IAM endpoint in config: `https://iam.storage.dev`
 - region: `auto`
 
 The bucket stores raw receipt images. D1 stores the resulting object URL on the corresponding receipt row after ingestion.
+
+## After Setup
+
+Import Splitwise rows, receipt data, and item vectors from `app/`:
+
+```sh
+uv run python ingest_kb.py
+uv run python ingest_receipts.py
+uv run python load_item_vectors.py
+```
+
+Start the local app:
+
+```sh
+uv run python main.py
+```

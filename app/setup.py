@@ -13,6 +13,7 @@ from utils.types import Config as Cfg
 from utils.config import load_config
 from utils.logger import log
 import boto3
+from botocore.exceptions import ClientError
 from botocore.client import Config
 
 load_dotenv()
@@ -31,7 +32,14 @@ def setup_tigris(infra_config: Cfg):
         config=Config(s3={"addressing_style": "virtual"}),
     )
 
-    s3_client.create_bucket(Bucket=infra_config.tigris.bucket_name)
+    try:
+        s3_client.create_bucket(Bucket=infra_config.tigris.bucket_name)
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        if error_code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+            log.info(f"Tigris bucket already exists: {infra_config.tigris.bucket_name}")
+            return
+        raise
     log.info(f"Tigris bucket created: {infra_config.tigris.bucket_name}")
 
 
