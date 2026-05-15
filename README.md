@@ -49,13 +49,22 @@ flowchart TD
     ToolDecision -- "No" --> Final["Assistant response"]
     ToolDecision -- "Yes" --> ToolNode["LangGraph ToolNode"]
 
+    ToolNode --> ReceiptEmbed["embed_receipt_query<br/>natural-language receipt recall query"]
+    ToolNode --> ReceiptSearch["search_receipt_vectors<br/>receipt-summary Vectorize search<br/>optional receipt/store/date filters"]
     ToolNode --> FinanceTool["query_finance_db<br/>validated read-only SELECT"]
     ToolNode --> ItemSearch["search_item_vectors<br/>item-name Vectorize search"]
 
+    ReceiptEmbed --> ReceiptCache[("In-memory embedding cache<br/>embedding_key")]
+    ReceiptCache --> ToolNode
+    ReceiptSearch --> ReceiptIndex[("Vectorize<br/>receipt summaries")]
     FinanceTool --> D1[("Cloudflare D1<br/>receipts, receipt_items,<br/>splits, expense views")]
     ItemSearch --> ItemIndex[("Vectorize<br/>receipt item names")]
+    ReceiptIndex --> ToolNode
     D1 --> ToolNode
     ItemIndex --> ToolNode
+
+    ReceiptSearch -. "returns candidate receipt_ids;<br/>agent grounds totals/items with SQL" .-> FinanceTool
+    ItemSearch -. "returns candidate item_names;<br/>agent confirms purchases with SQL" .-> FinanceTool
 
     ToolNode --> Agent
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
@@ -139,23 +148,44 @@ The assistant does not directly inspect the uploaded image pixels during the cha
 
 ## Ablation Study
 
-TODO: define the systems research question and ablation design once the evaluation harness and comparison conditions are settled.
+Research question: do in-context tool-sequence demonstrations improve agent performance over detailed procedural instructions alone?
+
+The ablation is scoped to the system prompt. The agent architecture, tools, models, knowledge base, and benchmark set should remain fixed while only the prompt strategy changes.
+
+| Condition | System Prompt Strategy | Purpose |
+|---|---|---|
+| A0: Procedural instructions | The current `app/prompts/system_prompt.md`: detailed rules for source selection, financial arithmetic, Splitwise reconciliation, Vectorize usage, uploaded image handling, and final-answer grounding. | Tests whether explicit instructions are enough for reliable tool routing and grounded synthesis. |
+| A1: In-context tool demonstrations | A prompt variant that primarily teaches behavior through examples of user queries, tool-call sequences, intermediate tool results, and final grounded answers. | Tests whether few-shot demonstrations improve tool sequencing, source selection, and answer quality compared with instructions alone. |
+
+The intended benchmark compares both prompts across the four query families while keeping the model and retrieval/data tools unchanged.
 
 ## Metrics
 
-### Quality
+`app/bench.py` writes results to `app/kirana_agent_tools_and_instruction_following.json`
+by default, or to the `--out` path when provided. Each query family records
+`test_cases_passed`, `test_cases_total`, `model`, and per-case `details`.
 
-- **Task Success Rate**: binary success per test case. Numerical answers accept +/- 5% or +/- $3, whichever is larger.
-- **Groundedness Score**: evaluates whether the answer cites or explains the right source basis, avoids hallucinated receipts/items, and distinguishes household totals from personal shares.
-- **Retrieval Recall@k**: whether the correct receipt IDs or item names appear in top-k before SQL grounding.
-- **Tool Call Accuracy**: whether the agent selected the right tools for the query family.
+### Correctness
 
-### Efficiency
+- **QF-1 numeric correctness**: extracts the first numeric value from the answer and requires exact equality with the expected value.
+- **QF-2 image recall correctness**: normalizes the answer to `yes` or `no` and compares it with the expected label.
+- **QF-3 judged semantic correctness**: sends the question, expected answer, and agent response to the configured judge model. The case passes only when the judge returns exactly `YES`. Results include `judge_decision`, `judge_raw_response`, `judge_model`, and `judge_telemetry`.
+- **QF-4 conversational numeric correctness**: runs follow-up turns in one thread, extracts the first numeric value from each answer, and requires exact equality with the expected value.
+- **Case failures and errors**: each case stores `passed`, `actual`, `expected` or `expectation`, and `error` when the benchmark call or judge call fails.
 
-- End-to-end latency and stage latency where instrumented, including image embedding, Vectorize search, D1 queries, and synthesis.
-- Token burn, including prompt, completion, and total tokens when reported by the model provider.
-- Tool call count per query.
-- Retrieval precision: proportion of retrieved receipt IDs or item candidates that were relevant to the final grounded answer.
+### Runtime Telemetry
+
+Each stored `agent_response` includes cumulative telemetry across the turns in that response:
+
+- `latency_seconds`: sum of chat turn `total_tat_seconds` values from the streamed end events.
+- `input_tokens`, `output_tokens`, and `total_tokens`.
+- `tool_calls`: total tool-call count.
+- `tools_called`: ordered list of tool names reported by the app.
+- `rate_limit_retries`: total retries reported in chat message stats.
+- `turns`: number of turns represented in the response, including prior turns for QF-4 follow-ups.
+
+For QF-3, `judge_telemetry` separately records judge-call `latency_seconds`,
+`input_tokens`, `output_tokens`, and `total_tokens`.
 
 ## Running Locally
 
