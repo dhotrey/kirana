@@ -6,47 +6,55 @@ The app is a FastAPI chat UI backed by a LangGraph agent. It combines structured
 
 ## Get Running
 
-Use Python 3.13+ and manage dependencies with `uv` from `app/`.
+Use Python 3.13+ and manage dependencies with `uv` from `app/`. A functional local app requires provisioned Cloudflare/Tigris resources, Cloudflare AI Gateway provider keys, Logfire configured or explicitly disabled, and ingested data. Starting the server before setup and ingestion will bring up the UI, but grocery finance answers will not work.
 
 ```sh
 cd app
 uv sync
+```
+
+1. Create `app/.env` with the required Cloudflare and Tigris credentials. See [setup credentials](docs/setup.md#required-env).
+
+2. Provision or update the remote resources:
+
+```sh
+uv run python setup.py
+```
+
+3. Finish the manual Cloudflare AI Gateway setup. `setup.py` creates the gateway resource, but it does not enable Authenticated Gateway or install upstream provider API keys. Add the gateway auth token to `app/.env` and configure provider keys before ingestion. See [Cloudflare AI Gateway setup](docs/setup.md#finish-cloudflare-ai-gateway-setup).
+
+4. Configure Logfire before ingestion, or explicitly disable it. See [Logfire setup](docs/setup.md#logfire-setup).
+
+5. Ingest the Splitwise export, receipt images, and item-vector index:
+
+```sh
+uv run python ingest_kb.py
+uv run python ingest_receipts.py
+uv run python load_item_vectors.py
+```
+
+6. Start the app:
+
+```sh
 uv run python main.py
 ```
 
-Then open:
+For local runs that do not need Logfire:
+
+```sh
+KIRANA_DISABLE_LOGFIRE=1 uv run python main.py
+```
+
+Open:
 
 - Chat UI: `http://127.0.0.1:8000/`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
 
-For local runs that do not need Logfire:
-
-```sh
-cd app
-KIRANA_DISABLE_LOGFIRE=1 uv run python main.py
-```
-
-The app expects Cloudflare, Tigris, model gateway, and optional Logfire environment variables in `app/.env` or the shell. See [docs/setup.md](docs/setup.md) for credential and infrastructure details.
+See [docs/setup.md](docs/setup.md) for credential and infrastructure details, and [docs/ingestion.md](docs/ingestion.md) for dry-run and single-image ingestion options.
 
 ## Common Commands
-
-Provision or update infrastructure:
-
-```sh
-cd app
-uv run python setup.py
-```
-
-Import source data and indexes:
-
-```sh
-cd app
-uv run python ingest_kb.py
-uv run python ingest_receipts.py
-uv run python load_item_vectors.py
-```
 
 Run benchmarks with the local server already running:
 

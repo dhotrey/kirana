@@ -23,12 +23,15 @@ AWS_SECRET_ACCESS_KEY=<tigris-secret-access-key>
 # Required after enabling Authenticated Gateway in the Cloudflare dashboard.
 CLOUDFLARE_AI_GATEWAY_API_TOKEN=<cloudflare-ai-gateway-auth-token>
 
+# Required for Logfire tracing unless KIRANA_DISABLE_LOGFIRE=1 is set.
+LOGFIRE_TOKEN=<logfire-write-token>
+
 # Optional if the D1 database already exists.
 # setup.py writes this after creating the database.
 KIRANA_DB_ID=<d1-database-id>
 ```
 
-`setup.py` creates the AI Gateway resource, but it does not enable gateway authentication or create provider keys. Those are dashboard steps described below.
+`setup.py` creates the AI Gateway resource, but it does not enable gateway authentication or create provider keys. Finish [Cloudflare AI Gateway setup](#finish-cloudflare-ai-gateway-setup) before ingestion. Configure [Logfire](#logfire-setup), or explicitly disable it, before ingestion starts.
 
 ## Where Credentials Come From
 
@@ -36,11 +39,12 @@ KIRANA_DB_ID=<d1-database-id>
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare dashboard -> account page/sidebar, or the account URL in the dashboard.
 - `CLOUDFLARE_AI_GATEWAY_API_TOKEN`: Cloudflare AI Gateway authentication token created from the gateway settings page after `setup.py` creates the gateway.
 - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: Tigris dashboard access keys. The setup uses Tigris' S3-compatible API endpoint from `app/config.toml`.
+- `LOGFIRE_TOKEN`: Logfire write token for ingestion and chat traces. Keep it private.
 - `KIRANA_DB_ID`: Cloudflare D1 database UUID. Leave unset for a fresh setup; the script creates the D1 database and appends the generated ID to `.env`.
 
 Optional runtime environment:
 
-- `KIRANA_DISABLE_LOGFIRE=1`: disables Logfire instrumentation for local runs or smoke checks.
+- `KIRANA_DISABLE_LOGFIRE=1`: disables Logfire instrumentation for local runs, smoke checks, or setups where `LOGFIRE_TOKEN` has not been created yet.
 
 ## Resources Created
 
@@ -93,7 +97,23 @@ Creates the `kirana-ai-gateway` AI Gateway with logging enabled, cache invalidat
 
 The gateway is intended to route hosted model calls used by ingestion and later query flows.
 
-After the script creates the gateway, finish the AI Gateway setup in the Cloudflare dashboard:
+### Tigris Object Store
+
+Creates or reuses the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
+
+- S3 endpoint: `https://t3.storage.dev`
+- IAM endpoint in config: `https://iam.storage.dev`
+- region: `auto`
+
+The bucket stores raw receipt images. D1 stores the resulting object URL on the corresponding receipt row after ingestion.
+
+## Finish Cloudflare AI Gateway Setup
+
+`setup.py` creates the `kirana-ai-gateway` gateway resource only. It does not create the gateway auth token, enable Authenticated Gateway, or add provider API keys. Ingestion and chat model calls will fail until those dashboard steps are complete.
+
+### Enable Authenticated Gateway
+
+After the script creates the gateway, finish authentication setup in the Cloudflare dashboard:
 
 1. Open the Cloudflare dashboard and select the same account as `CLOUDFLARE_ACCOUNT_ID`.
 2. Go to AI -> AI Gateway.
@@ -110,7 +130,9 @@ When Authenticated Gateway is enabled, requests must include:
 cf-aig-authorization: Bearer <CLOUDFLARE_AI_GATEWAY_API_TOKEN>
 ```
 
-This project uses bring-your-own-key (BYOK) provider keys through AI Gateway. Configure the upstream model provider keys in the same gateway:
+### Add Provider Keys
+
+This project uses bring-your-own-key (BYOK) provider keys through AI Gateway. Configure the upstream model provider keys in the same gateway; do this before running `ingest_receipts.py`, because receipt extraction and summarization call hosted models through AI Gateway.
 
 1. In Cloudflare, go to AI -> AI Gateway -> `kirana-ai-gateway`.
 2. Open Provider Keys.
@@ -132,19 +154,38 @@ Get the provider API keys from each provider console:
 
 Provider keys are stored in Cloudflare's AI Gateway/Secrets Store configuration. They should not be copied into this repository's `.env`; the app authenticates to the gateway with `CLOUDFLARE_AI_GATEWAY_API_TOKEN`, and the gateway attaches the correct upstream provider key at request time.
 
-### Tigris Object Store
+## Logfire Setup
 
-Creates or reuses the `kirana-kb-raw-data` bucket through Tigris' S3-compatible API:
+Ingestion and chat requests are instrumented with Logfire unless `KIRANA_DISABLE_LOGFIRE` is set to `1`, `true`, or `yes`. Decide this before ingesting data so receipt extraction, validation, D1 writes, Vectorize upserts, Tigris uploads, and model calls are traced consistently from the first run.
 
-- S3 endpoint: `https://t3.storage.dev`
-- IAM endpoint in config: `https://iam.storage.dev`
-- region: `auto`
+To enable Logfire:
 
-The bucket stores raw receipt images. D1 stores the resulting object URL on the corresponding receipt row after ingestion.
+1. Create or open a Logfire project.
+2. Create a write token for local ingestion and app traces.
+3. Add the token to `app/.env`:
+
+```dotenv
+LOGFIRE_TOKEN=<logfire-write-token>
+```
+
+To run without Logfire:
+
+```dotenv
+KIRANA_DISABLE_LOGFIRE=1
+```
+
+Do not commit Logfire tokens. Keep `app/.env` local.
 
 ## After Setup
 
-Import Splitwise rows, receipt data, and item vectors from `app/`:
+Before importing data, confirm:
+
+- `CLOUDFLARE_AI_GATEWAY_API_TOKEN` is in `app/.env`.
+- AI Gateway Authenticated Gateway is enabled.
+- AI Gateway provider keys are configured for the providers used by `app/config.toml`.
+- `LOGFIRE_TOKEN` is set, or `KIRANA_DISABLE_LOGFIRE=1` is set.
+
+Then import Splitwise rows, receipt data, and item vectors from `app/`:
 
 ```sh
 uv run python ingest_kb.py
