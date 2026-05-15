@@ -219,7 +219,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-knowledge-base/*
 .codex
 .vscode
 
