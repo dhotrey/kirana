@@ -106,9 +106,7 @@ async def update_conversation(
     return CreateConversationResponse(conversation=conversation)
 
 
-@app.delete(
-    "/api/conversations/{thread_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@app.delete("/api/conversations/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(thread_id: str, request: Request) -> Response:
     deleted = await chat_service(request).delete_conversation(thread_id)
     if not deleted:
@@ -121,9 +119,7 @@ async def delete_conversation(thread_id: str, request: Request) -> Response:
     response_model=list[ChatMessage],
     response_model_exclude_none=True,
 )
-async def conversation_messages(
-    thread_id: str, request: Request
-) -> list[ChatMessage]:
+async def conversation_messages(thread_id: str, request: Request) -> list[ChatMessage]:
     service = chat_service(request)
     if await service.get_conversation(thread_id) is None:
         raise HTTPException(status_code=404, detail="conversation not found")

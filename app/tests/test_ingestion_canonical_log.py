@@ -14,7 +14,13 @@ def canonical() -> CanonicalLog:
         date="2026-04-28",
         retries=RetryCounts(ocr_validation_retries=2, total_retries=2),
         latency_seconds=LatencySeconds(
-            ocr=1, summary=2, db_insert=3, embedding=4, vectorize_upsert=5, tigris_upload=6, total=21
+            ocr=1,
+            summary=2,
+            db_insert=3,
+            embedding=4,
+            vectorize_upsert=5,
+            tigris_upload=6,
+            total=21,
         ),
         tokens=TokenAccumulator(
             gemini_input=10, gemini_output=20, mistral_input=30, mistral_output=40

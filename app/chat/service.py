@@ -159,9 +159,7 @@ def _is_rate_limit_error(exc: Exception) -> bool:
             return True
 
     text = str(exc).lower()
-    return "429" in text and (
-        "rate limit exceeded" in text or "rate_limited" in text
-    )
+    return "429" in text and ("rate limit exceeded" in text or "rate_limited" in text)
 
 
 async def _invoke_model_with_rate_limit_retry(
@@ -718,7 +716,9 @@ class ChatService:
                     continue
                 name = tool_call.get("name")
                 args = tool_call.get("args") or {}
-                tool_call_id = str(tool_call.get("id") or f"kirana_tool_{len(tool_names)}")
+                tool_call_id = str(
+                    tool_call.get("id") or f"kirana_tool_{len(tool_names)}"
+                )
                 if not isinstance(name, str) or name not in self._tool_by_name:
                     continue
                 if not isinstance(args, dict):
@@ -726,7 +726,9 @@ class ChatService:
                 result = await self._tool_by_name[name].ainvoke(args)
                 tool_names.append(name)
                 tool_messages.append(
-                    ToolMessage(content=str(result), name=name, tool_call_id=tool_call_id)
+                    ToolMessage(
+                        content=str(result), name=name, tool_call_id=tool_call_id
+                    )
                 )
             if not tool_messages:
                 return tool_request

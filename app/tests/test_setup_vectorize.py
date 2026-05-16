@@ -14,7 +14,9 @@ class FakeMetadataIndex:
 
     def create(self, **kwargs):
         self.creates.append(kwargs)
-        return SimpleNamespace(mutation_id=f"{kwargs['index_name']}:{kwargs['property_name']}")
+        return SimpleNamespace(
+            mutation_id=f"{kwargs['index_name']}:{kwargs['property_name']}"
+        )
 
 
 class FakeIndexes:

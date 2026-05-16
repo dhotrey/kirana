@@ -54,8 +54,8 @@ class ReceiptVectorSearchInput(BaseModel):
             "Optional Cloudflare Vectorize metadata filter using only indexed fields: "
             "receipt_id, store_name, date. Date is indexed as YYYYMMDD number, "
             "but ISO YYYY-MM-DD inputs are accepted and normalized. Examples: "
-            "{\"date\": {\"$gte\": 20260401, \"$lt\": 20260501}} or "
-            "{\"store_name\": {\"$eq\": \"Coles\"}}."
+            '{"date": {"$gte": 20260401, "$lt": 20260501}} or '
+            '{"store_name": {"$eq": "Coles"}}.'
         ),
     )
     top_k: int | None = Field(
@@ -207,7 +207,8 @@ def _validate_filter_value(
         if field_type == "string" and not isinstance(item, str):
             raise ValueError(f"{field_name} filter values must be strings")
         if field_type == "number" and (
-            not isinstance(normalized_item, int | float) or isinstance(normalized_item, bool)
+            not isinstance(normalized_item, int | float)
+            or isinstance(normalized_item, bool)
         ):
             raise ValueError(f"{field_name} filter values must be numbers")
         if field_type == "boolean" and not isinstance(item, bool):
@@ -334,9 +335,9 @@ def build_vectorize_tools(
                     f"{cfg.ingestion.embedding_model}:{cfg.ingestion.embedding_dim}:"
                     f"{normalized_query}"
                 )
-                embedding_key = hashlib.sha256(key_material.encode("utf-8")).hexdigest()[
-                    :24
-                ]
+                embedding_key = hashlib.sha256(
+                    key_material.encode("utf-8")
+                ).hexdigest()[:24]
                 embedding_cache[embedding_key] = vector
                 response = {
                     "ok": True,

@@ -27,7 +27,9 @@ def extract_json_text(value: Any) -> str:
 
 
 def usage_from_result(result: Any) -> TokenStats:
-    usage_obj = result.usage() if hasattr(result, "usage") else getattr(result, "usage", None)
+    usage_obj = (
+        result.usage() if hasattr(result, "usage") else getattr(result, "usage", None)
+    )
     if usage_obj is None:
         return TokenStats()
 

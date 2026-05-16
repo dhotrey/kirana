@@ -14,7 +14,9 @@ class KiranaConfig(pydantic.BaseModel):
     @pydantic.model_validator(mode="after")
     def validate_model_aliases(self) -> "KiranaConfig":
         missing = [
-            model for model in self.available_models if model not in self.model_identifiers
+            model
+            for model in self.available_models
+            if model not in self.model_identifiers
         ]
         if missing:
             raise ValueError(

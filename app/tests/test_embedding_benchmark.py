@@ -76,4 +76,6 @@ def test_embed_local_knowledge_base_images_benchmark():
             print(row)
 
     assert summary_rows
-    assert all(row["vector_dimensions"] == cfg.ingestion.embedding_dim for row in summary_rows)
+    assert all(
+        row["vector_dimensions"] == cfg.ingestion.embedding_dim for row in summary_rows
+    )

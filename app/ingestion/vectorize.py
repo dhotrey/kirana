@@ -42,6 +42,4 @@ def upsert_vector(
         account_id=ctx.cloudflare_account_id.get_secret_value(),
         body={"vectors": [vector]},
     )
-    ctx.log.info(
-        f"vector upserted (dim={len(values)}, metadata={vector['metadata']})"
-    )
+    ctx.log.info(f"vector upserted (dim={len(values)}, metadata={vector['metadata']})")

@@ -146,7 +146,12 @@ def _extract_returning_id(result: Any) -> int:
     if isinstance(rows, list) and rows and hasattr(rows[0], "results"):
         rows = _unwrap(rows[0])
     # QueryResult -> list[dict]
-    if hasattr(result, "results") and isinstance(rows, list) and rows and hasattr(rows[0], "results"):
+    if (
+        hasattr(result, "results")
+        and isinstance(rows, list)
+        and rows
+        and hasattr(rows[0], "results")
+    ):
         rows = _unwrap(rows[0])
 
     if isinstance(rows, list) and rows:
@@ -172,7 +177,9 @@ def insert_receipt(ctx: "IngestionContext", receipt: Receipt) -> int:
     return receipt_id
 
 
-def insert_items(ctx: "IngestionContext", receipt_id: int, items: list[ReceiptItem]) -> None:
+def insert_items(
+    ctx: "IngestionContext", receipt_id: int, items: list[ReceiptItem]
+) -> None:
     for sql, params in build_items_insert_batches(receipt_id, items):
         ctx.log.debug(f"computed item cents bind params={params}")
         _query(ctx, sql, params)

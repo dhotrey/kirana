@@ -79,9 +79,7 @@ def test_validate_finance_sql_rejects_unsafe_or_unknown_sql(sql):
 def test_extract_d1_rows_handles_cloudflare_page_shape():
     result = D1Page([D1QueryResult([{"total_cents": 12345, "receipt_count": 3}])])
 
-    assert extract_d1_rows(result) == [
-        {"total_cents": 12345, "receipt_count": 3}
-    ]
+    assert extract_d1_rows(result) == [{"total_cents": 12345, "receipt_count": 3}]
 
 
 def test_extract_d1_query_rows_returns_columns_and_tuples():

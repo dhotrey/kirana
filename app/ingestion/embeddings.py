@@ -155,7 +155,8 @@ class Embedder:
                                     "prepared_width": prepared_image.size[0],
                                     "prepared_height": prepared_image.size[1],
                                     "resized": prepared_image.size != original_size,
-                                    "decoder_downsampled": decoded_size != original_size,
+                                    "decoder_downsampled": decoded_size
+                                    != original_size,
                                 }
                             )
 

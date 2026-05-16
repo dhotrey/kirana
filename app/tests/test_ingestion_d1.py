@@ -58,7 +58,9 @@ def test_build_receipt_insert_sql_and_params():
 
 
 def test_build_items_insert_batches_respects_d1_variable_limit():
-    items = [ReceiptItem(item_name=f"Item {idx}", total_price="1.00") for idx in range(17)]
+    items = [
+        ReceiptItem(item_name=f"Item {idx}", total_price="1.00") for idx in range(17)
+    ]
     batches = build_items_insert_batches(1, items)
     assert RECEIPT_ITEM_INSERT_BATCH_SIZE == 16
     assert len(batches) == 2

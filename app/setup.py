@@ -108,7 +108,9 @@ def setup_vectorize(
             },
         )
         if kirana_vectorize_index is None:
-            raise SetupError(f"Cloudflare Vectorize index creation failed: {index_name}")
+            raise SetupError(
+                f"Cloudflare Vectorize index creation failed: {index_name}"
+            )
         else:
             log.info(
                 f"Cloudflare Vectorize index created for {index_name} "
@@ -133,7 +135,9 @@ def setup_vectorize_metadata_indices(
         ),
     ]
     for index_name, metadata_fields, metadata_field_types in index_metadata:
-        for idx_name, idx_type in zip(metadata_fields, metadata_field_types, strict=True):
+        for idx_name, idx_type in zip(
+            metadata_fields, metadata_field_types, strict=True
+        ):
             metadata_index = cf_client.vectorize.indexes.metadata_index.create(
                 index_name=index_name,
                 index_type=idx_type,

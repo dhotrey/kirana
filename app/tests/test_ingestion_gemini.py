@@ -10,7 +10,9 @@ from ingestion.sources import ImageInput
 def test_build_prompt_sends_receipt_as_binary_image(tmp_path):
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
-    (prompts_dir / "receipt_extraction.md").write_text("Extract receipt.", encoding="utf-8")
+    (prompts_dir / "receipt_extraction.md").write_text(
+        "Extract receipt.", encoding="utf-8"
+    )
     ctx = SimpleNamespace(prompts_dir=prompts_dir)
     image = ImageInput(
         image_id="receipt1",
@@ -38,7 +40,9 @@ def test_build_prompt_sends_receipt_as_binary_image(tmp_path):
 def test_build_prompt_includes_retry_repair_context(tmp_path):
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
-    (prompts_dir / "receipt_extraction.md").write_text("Extract receipt.", encoding="utf-8")
+    (prompts_dir / "receipt_extraction.md").write_text(
+        "Extract receipt.", encoding="utf-8"
+    )
     ctx = SimpleNamespace(prompts_dir=prompts_dir)
     image = ImageInput(
         image_id="receipt1",
@@ -66,7 +70,9 @@ def test_build_prompt_includes_retry_repair_context(tmp_path):
 def test_build_prompt_truncates_large_previous_output(tmp_path):
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
-    (prompts_dir / "receipt_extraction.md").write_text("Extract receipt.", encoding="utf-8")
+    (prompts_dir / "receipt_extraction.md").write_text(
+        "Extract receipt.", encoding="utf-8"
+    )
     ctx = SimpleNamespace(prompts_dir=prompts_dir)
     image = ImageInput(
         image_id="receipt1",

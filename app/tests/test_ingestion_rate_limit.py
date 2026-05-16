@@ -40,15 +40,20 @@ def test_wait_after_interval_does_not_sleep():
 
 
 def test_retry_backoff_strategies():
-    assert retry_backoff_seconds(
-        3, strategy="constant", base_seconds=1, max_seconds=30
-    ) == 1
-    assert retry_backoff_seconds(
-        3, strategy="linear", base_seconds=1, max_seconds=30
-    ) == 3
-    assert retry_backoff_seconds(
-        3, strategy="exponential", base_seconds=1, max_seconds=30
-    ) == 4
-    assert retry_backoff_seconds(
-        10, strategy="exponential", base_seconds=10, max_seconds=30
-    ) == 30
+    assert (
+        retry_backoff_seconds(3, strategy="constant", base_seconds=1, max_seconds=30)
+        == 1
+    )
+    assert (
+        retry_backoff_seconds(3, strategy="linear", base_seconds=1, max_seconds=30) == 3
+    )
+    assert (
+        retry_backoff_seconds(3, strategy="exponential", base_seconds=1, max_seconds=30)
+        == 4
+    )
+    assert (
+        retry_backoff_seconds(
+            10, strategy="exponential", base_seconds=10, max_seconds=30
+        )
+        == 30
+    )

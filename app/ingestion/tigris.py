@@ -67,6 +67,4 @@ def write_dry_run_artifacts(
     (target_dir / f"{image.image_id}-ocr.json").write_text(
         receipt.model_dump_json(indent=2), encoding="utf-8"
     )
-    (target_dir / f"{image.image_id}-summary.txt").write_text(
-        summary, encoding="utf-8"
-    )
+    (target_dir / f"{image.image_id}-summary.txt").write_text(summary, encoding="utf-8")

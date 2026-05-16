@@ -200,4 +200,6 @@ def _is_cloudflare_not_found(exc: Exception) -> bool:
 def _is_cloudflare_already_exists(exc: Exception) -> bool:
     text = str(exc).lower()
     status_code = getattr(exc, "status_code", None)
-    return status_code == 409 or "already exists" in text or "already been created" in text
+    return (
+        status_code == 409 or "already exists" in text or "already been created" in text
+    )

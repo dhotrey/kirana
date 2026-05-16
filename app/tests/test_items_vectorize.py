@@ -86,8 +86,7 @@ def test_upsert_distinct_item_vectors_upserts_one_at_a_time():
     ]
     assert [len(call["body"]["vectors"]) for call in indexes.upserts] == [1, 1]
     assert [
-        call["body"]["vectors"][0]["metadata"]["item_name"]
-        for call in indexes.upserts
+        call["body"]["vectors"][0]["metadata"]["item_name"] for call in indexes.upserts
     ] == ["Apple", "Banana"]
 
 

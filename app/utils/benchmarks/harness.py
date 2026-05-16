@@ -80,7 +80,9 @@ class AgentResponse(BaseModel):
     def follow_up(self, prompt: str) -> AgentResponse:
         """Send a follow-up turn in the same conversation."""
 
-        return self._client._query(prompt=prompt, thread_id=self.thread_id, prior_turns=self.turns)
+        return self._client._query(
+            prompt=prompt, thread_id=self.thread_id, prior_turns=self.turns
+        )
 
 
 class BenchmarkClient:

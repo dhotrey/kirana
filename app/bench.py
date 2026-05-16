@@ -181,7 +181,7 @@ Date Store Items Total (AUD)
 2026-03-28 THE FRUIT TEMPLE 5 $17.92
 2026-03-31 Woolworths 18 $87.81
 Household total for March fresh veggies trips: $338.88 (sum of all 8 receipts).""",
-    )
+    ),
 ]
 
 QF4_CASES = [
@@ -454,9 +454,7 @@ def resolve_output_path(raw_path: str | None) -> Path:
 def resolve_system_prompt_path(raw_path: str) -> Path:
     path = Path(raw_path)
     candidates = (
-        [path]
-        if path.is_absolute()
-        else [Path.cwd() / path, PROMPTS_DIR / path]
+        [path] if path.is_absolute() else [Path.cwd() / path, PROMPTS_DIR / path]
     )
     for candidate in candidates:
         if candidate.exists():
@@ -499,8 +497,7 @@ def run_qf1(
         write_results(results)
         status = "PASS" if case_result["passed"] else "FAIL"
         log_progress(
-            f"QF-1 {index}/{len(QF1_CASES)} {status}: "
-            f"actual={case_result['actual']!r}"
+            f"QF-1 {index}/{len(QF1_CASES)} {status}: actual={case_result['actual']!r}"
         )
         log_progress(f"Wrote results to {RESULTS_PATH}")
 
@@ -629,9 +626,7 @@ def run_qf4(
 
     for index, case in enumerate(QF4_CASES, start=1):
         turn_type = "follow-up" if case.is_follow_up else "fresh query"
-        log_progress(
-            f"QF-4 {index}/{len(QF4_CASES)} running: {case.id} ({turn_type})"
-        )
+        log_progress(f"QF-4 {index}/{len(QF4_CASES)} running: {case.id} ({turn_type})")
         try:
             if case.is_follow_up and response is None:
                 raise RuntimeError("cannot run follow-up before conversation starts")
@@ -659,8 +654,7 @@ def run_qf4(
         write_results(results)
         status = "PASS" if case_result["passed"] else "FAIL"
         log_progress(
-            f"QF-4 {index}/{len(QF4_CASES)} {status}: "
-            f"actual={case_result['actual']!r}"
+            f"QF-4 {index}/{len(QF4_CASES)} {status}: actual={case_result['actual']!r}"
         )
         if case_result.get("error"):
             log_progress(f"QF-4 {index}/{len(QF4_CASES)} error: {case_result['error']}")

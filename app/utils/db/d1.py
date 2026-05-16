@@ -160,8 +160,7 @@ def extract_d1_rows(result: Any) -> list[dict[str, Any]]:
             if rows and all(row is not None for row in rows):
                 dict_rows = [row for row in rows if row is not None]
                 if any(
-                    {"results", "rows", "result"} & set(row.keys())
-                    for row in dict_rows
+                    {"results", "rows", "result"} & set(row.keys()) for row in dict_rows
                 ):
                     pending.extend(current)
                     continue
@@ -170,7 +169,9 @@ def extract_d1_rows(result: Any) -> list[dict[str, Any]]:
             continue
 
         if isinstance(current, dict):
-            nested_keys = [key for key in ("results", "rows", "result") if key in current]
+            nested_keys = [
+                key for key in ("results", "rows", "result") if key in current
+            ]
             if nested_keys:
                 for key in nested_keys:
                     nested = current[key]
@@ -210,8 +211,5 @@ def extract_d1_query_rows(result: Any) -> D1QueryRows:
             if key not in columns:
                 columns.append(key)
 
-    tuple_rows = [
-        tuple(row.get(column) for column in columns)
-        for row in dict_rows
-    ]
+    tuple_rows = [tuple(row.get(column) for column in columns) for row in dict_rows]
     return D1QueryRows(columns=columns, rows=tuple_rows)

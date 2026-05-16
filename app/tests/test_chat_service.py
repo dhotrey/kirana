@@ -42,7 +42,9 @@ def test_extract_tool_names_for_latest_turn_counts_executed_tools():
                 }
             ],
         ),
-        ToolMessage(content='{"ok": true}', name="query_finance_db", tool_call_id="call_2"),
+        ToolMessage(
+            content='{"ok": true}', name="query_finance_db", tool_call_id="call_2"
+        ),
         AIMessage(content="The total was $123.45."),
     ]
 

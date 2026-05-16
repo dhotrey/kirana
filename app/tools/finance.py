@@ -78,7 +78,10 @@ def validate_finance_sql(sql: str) -> str:
             "Query can only reference these tables: "
             + ", ".join(sorted(ALLOWED_FINANCE_TABLES))
         )
-    if "receipts" in referenced_tables and referenced_tables & SPLITWISE_ACCOUNTING_TABLES:
+    if (
+        "receipts" in referenced_tables
+        and referenced_tables & SPLITWISE_ACCOUNTING_TABLES
+    ):
         raise ValueError(
             "Do not combine receipts with Splitwise/accounting tables in one SQL "
             "query. Query receipt totals and Splitwise/accounting rows separately, "

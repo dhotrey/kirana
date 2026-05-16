@@ -36,7 +36,9 @@ def test_query_and_follow_up_accumulate_conversation_telemetry():
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         if len(requests) == 1:
-            return _stream_response("thread-1", "first answer", 1.25, ["query_finance_db"])
+            return _stream_response(
+                "thread-1", "first answer", 1.25, ["query_finance_db"]
+            )
         return _stream_response(
             "thread-1",
             "second answer",

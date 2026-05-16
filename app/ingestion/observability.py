@@ -25,7 +25,6 @@ def bind_image(image_id: str):
     return logger.bind(image_id=image_id)
 
 
-
 def configure_logfire() -> None:
     disable = os.environ.get("KIRANA_DISABLE_LOGFIRE", "").lower()
     if disable in ("1", "true", "yes"):
