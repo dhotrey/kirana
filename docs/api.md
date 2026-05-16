@@ -179,7 +179,7 @@ If `thread_id` is omitted or unknown, the service creates a new conversation and
 
 Finance database tool calls use a shared `D1Database` client created during application startup from `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID`. If these are unavailable, the chat stream still starts, but the assistant receives a tool error and should report that structured finance lookup is unavailable. Tool calls and D1 queries are logged with Loguru and, when Logfire is enabled, recorded as spans with query text, row counts, and latency metadata.
 
-LLM calls that fail with a 429 rate-limit response are retried automatically after 10, 15, and 20 seconds. Each retry emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
+LLM calls that fail with a 429 rate-limit response are retried with backoff waits of 15, 30, 45, and 60 seconds before each subsequent attempt (up to four waits; see `RATE_LIMIT_RETRY_DELAYS_SECOND` in `app/chat/service.py`). Each wait emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
 
 ### Request
 
@@ -234,7 +234,7 @@ Errors during streaming are emitted as inline `error` events on the SSE stream r
 
 ## `POST /api/chat/image/stream`
 
-Sends one agentic chat turn with an attached image and optional text question. The backend embeds the image with the configured multimodal embedding model, stores the vector under a short `embedding_key`, and injects that key into the chat turn. The agent must then use the normal tool loop: call `search_receipt_vectors` with the uploaded-image key, inspect scores against `[kirana].receipt_image_match_threshold`, and call `query_finance_db` for receipt and line-item evidence before answering.
+Sends one agentic chat turn with an attached image and optional text question. The backend embeds the image with the same local embedding model and dimensions as ingestion (`[ingestion].embedding_model` / `[cloudflare].vectorize_index_dimension`), stores the vector in the per-process embedding cache under a short `embedding_key`, and injects that key into the user message. The agent must use the normal tool loop: call `search_item_vectors` with that `embedding_key` (do not call `embed_receipt_query` for the upload), compare Vectorize scores against `[kirana].receipt_image_match_threshold`, then call `query_finance_db` to confirm matching `receipt_items` joined to `receipts` before answering.
 
 Uploaded images are resized before embedding to `[ingestion].embedding_image_max_dimension` on the longest side, currently `256`, without upscaling smaller images. If `[ingestion].embedding_device` is set, it is passed to `SentenceTransformer` as the local embedding device; an empty value uses the library default.
 
