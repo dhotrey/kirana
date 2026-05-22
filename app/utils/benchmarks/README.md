@@ -21,6 +21,8 @@ uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-
 uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-results/kirana_agent_icl.json
 ```
 
+See [docs/evaluation.md](../../../docs/evaluation.md) for `bench.py` flags (including the default QF-1-only run when no family is selected) and QF-3 judge pacing.
+
 Then use the harness:
 
 ```python

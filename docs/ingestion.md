@@ -91,6 +91,19 @@ uv run python ingest_kb.py
 
 The importer reads the configured CSV, skips empty rows and rows without a cost, converts money fields to integer cents, and inserts batched rows into the `splits` table. It expects `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID` to be available in `app/.env` or the shell.
 
+### CSV column contract
+
+`app/ingest_kb.py` reads every data row as a list of string cells, then converts **money** columns using **0-based indices** on the raw Splitwise export row (after the header row is skipped):
+
+| Index | Usage |
+|---:|---|
+| `3` | Total expense cost; rows with an empty value here are skipped. |
+| `5` | Primary user amount (`me_cents` after conversion). |
+| `6` | Roommate 1 amount. |
+| `7` | Roommate 2 amount. |
+
+All columns from the row are trimmed and inserted in order into `date`, `description`, `category`, `cost_cents`, `currency`, `me_cents`, `roommate1_cents`, `roommate2_cents`. If your export layout differs, remap columns before import or adjust the constants in `ingest_kb.py`.
+
 ---
 
 ## Receipt CLI Application Flow

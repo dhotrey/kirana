@@ -62,6 +62,13 @@ uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-re
 uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-raw-no-tools.json
 ```
 
+### CLI behavior (`app/bench.py`)
+
+- **`--all`**: runs QF-1 through QF-4. If you run `uv run python bench.py` with **no** family flags, the script defaults to **QF-1 only** (see `selected_query_families` in `app/bench.py`). Use `--QF2`, `--QF3`, `--QF4`, or `--all` explicitly when you intend those suites.
+- **`--no-tools`**: sets `tools_enabled=false` on benchmark HTTP requests (plain-LLM baseline).
+- **`--system_prompt`**: per-request override; relative paths resolve from the current working directory, then `app/prompts/`.
+- **QF-3 judge pacing**: between QF-3 cases and before each judge call, `bench.py` sleeps a random **30–60 seconds** (`QF3_MIN_SLEEP_SECONDS` / `QF3_MAX_SLEEP_SECONDS`) to reduce upstream rate limiting when the agent and judge share the same gateway. Full `--all` runs that include QF-3 are intentionally slow.
+
 Generate benchmark charts from saved result JSON files:
 
 ```sh
