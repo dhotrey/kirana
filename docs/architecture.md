@@ -10,6 +10,34 @@ Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools f
 - Models are configured in `app/config.toml` and called through Cloudflare AI Gateway via `app/chat/gateway.py`.
 - The active tools are registered in the graph from `app/tools/finance.py` and `app/tools/vectorize.py`.
 
+## Code map
+
+| Location | Responsibility |
+|---|---|
+| `app/main.py` | FastAPI app, static chat UI, conversation CRUD routes, SSE chat endpoints, startup wiring for logging, Logfire, D1, and `ChatService`. |
+| `app/chat/service.py` | LangGraph graph (`agent` → `tools_condition` → `ToolNode` loop for most models), conversation SQLite metadata, streaming, image embedding for uploads, 429 backoff on LLM calls. |
+| `app/chat/gateway.py` | Cloudflare AI Gateway OpenAI-compatible base URL and request headers (`cf-aig-authorization`, optional `cf-aig-byok-alias` for Gemini and Mistral identifiers). |
+| `app/chat/schemas.py` | Pydantic models for API payloads, conversations, and message stats. |
+| `app/tools/finance.py` | `query_finance_db` tool: validated read-only SQL against D1. |
+| `app/tools/vectorize.py` | `embed_receipt_query`, `search_receipt_vectors`, `search_item_vectors` tools backed by in-process embedding cache and Cloudflare Vectorize. |
+| `app/utils/db/d1.py` | HTTP client for Cloudflare D1 queries used by tools and setup. |
+| `app/utils/db/db_setup.py` | D1 schema DDL invoked from `setup.py`. |
+| `app/utils/config.py` / `app/utils/types.py` | Typed `config.toml` loading. |
+| `app/ingestion/` | Receipt pipeline stages: Gemini OCR, validation, Mistral summary, embeddings, D1/Vectorize/Tigris I/O, rate limits, canonical logs. |
+| `app/ingest_receipts.py`, `app/ingest_kb.py`, `app/load_item_vectors.py` | CLI entrypoints for receipts, Splitwise CSV, and item-name vectors. |
+| `app/setup.py` | Provisions D1, Vectorize indexes, AI Gateway, Tigris bucket. |
+| `app/bench.py` | Query-family benchmark driver over the live HTTP API. |
+
+## Agent routing (Gemini vs other models)
+
+The graph is always a two-node LangGraph: `agent` and `tools` with `tools_condition` (`app/chat/service.py`). Behavior inside the agent node depends on the selected model identifier:
+
+- **Non-Gemini models** (for example Mistral): the chat model is invoked with `bind_tools`, LangGraph routes to `ToolNode` when the model emits tool calls, and tool results are fed back through the normal loop. Tool names in SSE stats come from `ToolMessage` / `tool_calls` on the message history.
+
+- **Gemini routes** (`model_routes_via_gemini` in `app/chat/gateway.py`): the agent node does **not** use the LangGraph `ToolNode` for execution. Instead `_gemini_agent_response` runs up to **three** internal tool-request rounds: each round calls the model with tools bound, executes requested tools in process, appends plain `ToolMessage` content, and continues. If tools are still requested after three rounds, a final synthesis call asks the model to answer from the accumulated tool text without further tools. This avoids replaying Gemini function-call parts through the OpenAI-compatible tool loop (which can fail when Gemini requires `thought_signature` metadata). Ordered tool names for telemetry are stored on the final `AIMessage` under `additional_kwargs["kirana_tool_names"]`.
+
+The diagram below shows the **non-Gemini** path where `tools_condition` routes to LangGraph `ToolNode`. For Gemini, tools run inside the agent node as above, and the conditional edge to `ToolNode` is not used for those internal tool rounds.
+
 ```mermaid
 flowchart TD
     User["User chat turn<br/>/api/chat/stream or /api/chat/image/stream"] --> Prep["ChatService.chat_stream<br/>validate model, ensure conversation,<br/>emit start event"]

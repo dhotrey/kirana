@@ -4,6 +4,20 @@ This folder contains technical documentation for Kirana's architecture, infrastr
 
 Kirana is still an early-stage research prototype, so these docs should stay close to the code and record decisions as they become concrete. The goal is to make the retrieval design, infrastructure shape, evaluation assumptions, and setup requirements easy to inspect without overloading the project README.
 
+## Where to look
+
+| Goal | Document |
+|---|---|
+| First-time Cloudflare, Tigris, gateway, Logfire | [Setup](./setup.md) |
+| How chat, tools, stores, and ingestion fit together | [Architecture](./architecture.md) |
+| Tables, views, indexes, Vectorize metadata | [Data model](./data-model.md) |
+| Receipt / Splitwise / item-vector CLIs and pipeline stages | [Ingestion](./ingestion.md) |
+| HTTP and SSE contracts | [API](./api.md) |
+| Benchmarks, ablations, metrics | [Evaluation](./evaluation.md) |
+| Local failures and configuration pitfalls | [Troubleshooting](./troubleshooting.md) |
+
+`app/main.py` sets Hugging Face-related environment variables at import time (including `HF_HUB_OFFLINE=1` for deterministic local runs). That affects first-time embedding model downloads; see [Troubleshooting](./troubleshooting.md#models-and-local-embeddings).
+
 ## Current Documents
 
 - [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `app/setup.py`.
