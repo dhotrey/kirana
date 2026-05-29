@@ -70,7 +70,7 @@ More setup, ingestion, API, and evaluation details live in [docs/](docs/README.m
 | Doc | Covers |
 |---|---|
 | [Setup](docs/setup.md) | Credentials, infrastructure resources, and `app/setup.py` behavior. |
-| [Architecture](docs/architecture.md) | Chat graph, tools, stores, and retrieval modalities. |
+| [Architecture](docs/architecture.md) | Component map, chat graph, tool paths, stores, and retrieval modalities. |
 | [Data Model](docs/data-model.md) | D1 tables, views, SQL indexes, Vectorize indexes, metadata fields, and local SQLite tables. |
 | [Ingestion Pipeline](docs/ingestion.md) | Receipt ingestion, Splitwise import, item-vector indexing, storage responsibilities, and dry-run behavior. |
 | [API Endpoints](docs/api.md) | FastAPI routes, request/response shapes, SSE events, and Swagger/OpenAPI locations. |

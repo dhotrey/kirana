@@ -40,6 +40,26 @@ uv run python ingest_receipts.py --config config.toml
 
 `ingest_receipts.py` is intentionally thin. Most work happens in `app/ingestion/`; the CLI owns startup, config loading, input selection, dry-run mode, and per-image orchestration.
 
+### Ingestion package modules
+
+| Module | Responsibility |
+|---|---|
+| `context.py` | Builds `IngestionContext`: Cloudflare client, Tigris S3 client, gateway-routed Pydantic AI agents, embedder, rate limiter. |
+| `pipeline.py` | Orchestrates one receipt: OCR, summary, D1, embedding, Vectorize, Tigris, canonical log. |
+| `sources/` | Loads receipt images from disk (`disk.py`) or a single `--image` path (`upload.py`). |
+| `gemini.py` | Receipt image extraction via gateway-routed Gemini with schema/accounting retries. |
+| `mistral.py` | Semantic receipt summary generation. |
+| `schemas.py` | Pydantic receipt and line-item models used for validation. |
+| `d1.py` | Inserts receipt rows, line items, and post-upload image URL updates. |
+| `embeddings.py` | Local `SentenceTransformer` wrapper shared by ingestion and chat. |
+| `vectorize.py` | Upserts receipt-summary vectors; used by receipt ingestion. |
+| `items_vectorize.py` | Loads distinct item names from D1 and upserts the item-name index (`load_item_vectors.py`). |
+| `tigris.py` | Uploads raw images and derived artifacts; returns the public image URL. |
+| `canonical_log.py` | Per-receipt JSON outcome logs under `logs_dir`. |
+| `observability.py` | Logfire and Loguru configuration for ingestion CLIs. |
+| `rate_limit.py` | Gemini spacing and exponential backoff helpers. |
+| `prompts.py` | Loads markdown prompts from `prompts_dir`. |
+
 ---
 
 ## How to Run Item Vector Ingestion

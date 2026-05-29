@@ -2,6 +2,23 @@
 
 Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools for finance lookup and semantic retrieval, routes model calls through Cloudflare AI Gateway, stores chat threads in local SQLite, reads finance data from Cloudflare D1, and searches receipt/item embeddings in Cloudflare Vectorize.
 
+## Application Components
+
+| Path | Role |
+|---|---|
+| `app/main.py` | FastAPI routes, lifespan wiring for D1 and `ChatService`, static chat UI. |
+| `app/chat/` | LangGraph graph, SSE streaming, conversation CRUD, image embedding before the graph, Gemini-specific tool loop. |
+| `app/tools/` | LangChain tools: validated D1 SQL (`finance.py`) and Vectorize search/embedding (`vectorize.py`). |
+| `app/ingestion/` | Receipt OCR, validation, summary, D1/Vectorize/Tigris writes, embeddings, observability. |
+| `app/ingest_receipts.py`, `app/ingest_kb.py`, `app/load_item_vectors.py` | CLI entrypoints for receipts, Splitwise CSV, and item-name vectors. |
+| `app/setup.py` | Provisions D1 schema, Vectorize indexes, AI Gateway, and Tigris bucket (`utils/db/db_setup.py`). |
+| `app/bench.py` | Query-family benchmark driver over the streaming chat API. |
+| `app/utils/` | Config loading, D1 client, Logfire helpers, benchmark harness client. |
+| `app/config.toml` | Model aliases, Cloudflare resource names, ingestion paths, retrieval thresholds. |
+| `app/prompts/` | System prompt and ingestion prompt templates. |
+
+Persistent stores: Cloudflare D1 (structured finance), Vectorize (semantic retrieval), Tigris (receipt artifacts), local SQLite (`db.sqlite` for chat checkpoints and sidebar metadata).
+
 ## Chat App
 
 - `app/main.py` serves the FastAPI app and static chat UI from `app/index.html`.
@@ -45,12 +62,43 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+The diagram shows the default LangGraph path: `tools_condition` routes tool calls through `ToolNode`. When the selected model routes via Gemini (identifier contains `gemini` or `google-ai-studio`), tool execution stays inside the agent node instead; see [Model routing](#model-routing-and-tool-execution).
+
+## Model Routing and Tool Execution
+
+`app/chat/gateway.py` builds OpenAI-compatible clients pointed at Cloudflare AI Gateway. Provider BYOK aliases are sent as `cf-aig-byok-alias` (`gemini` or `mistral`) based on the model identifier.
+
+| Model route | Tool execution | Why |
+|---|---|---|
+| Non-Gemini (e.g. Mistral) with `tools_enabled=true` | LangGraph `ToolNode` after `tools_condition` | Standard function-calling loop through LangGraph. |
+| Gemini with `tools_enabled=true` | In-agent loop in `_gemini_agent_response` (up to three tool rounds, then a synthesis call without tools) | Avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata. |
+| Any model with `tools_enabled=false` | No tools bound | Plain-LLM baseline for benchmarks. |
+
+Gemini chat turns also wait `ingestion.gemini_min_interval_seconds` before the graph starts (`GeminiRateLimiter` in `ChatService`). All models share 429 retry backoff of 15s, 30s, 45s, and 60s (`RATE_LIMIT_RETRY_DELAYS_SECONDS` in `app/chat/service.py`).
+
+Text and receipt-query embeddings share one in-process dict on `ChatService`. Keys are short hashes; they are lost on process restart. Image uploads embed before the graph and inject `embedding_key` into the user message.
+
 ## Implemented Tools
 
 - `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
+
+### Finance SQL guardrails
+
+`query_finance_db` validates SQL in `app/tools/finance.py` before calling D1:
+
+- Only a single `SELECT` statement; no comments, semicolon chaining, or write/DDL keywords.
+- Tables must be drawn from `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+- `receipts` / `receipt_items` cannot be combined with Splitwise tables or expense views in one query; the agent must query each side separately and reconcile.
+- Results are capped at 100 rows (`MAX_RESULT_ROWS`); responses include `truncated: true` when clipped.
+
+Tool responses are JSON strings with `ok`, and on success `columns`, `row_count`, and `rows`. On failure, `ok` is false and `error` explains the validation or D1 error.
+
+### Vector search guardrails
+
+Receipt filters accept only indexed metadata fields (`receipt_id`, `store_name`, `date`) with Cloudflare Vectorize operators. ISO `YYYY-MM-DD` date strings are normalized to numeric `YYYYMMDD` before the API call. Filter JSON must serialize to under 2048 bytes.
 
 ### Uploaded-image chat turns
 
