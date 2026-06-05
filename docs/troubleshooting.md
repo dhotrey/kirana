@@ -10,8 +10,9 @@ Symptoms and fixes for local Kirana development. All behavior below is grounded 
 | `Unknown embedding_key` from vector tools | Server restart or different process than the one that created the key | Embedding vectors live in an in-process dict in `ChatService` (`app/chat/service.py`). Start a new chat turn after restart; for text queries call `embed_receipt_query` again before `search_receipt_vectors`. |
 | Uploaded-image answers feel random or always "no" | Item index empty or threshold too strict | Run `uv run python load_item_vectors.py` after receipts exist ([ingestion](./ingestion.md)). Tune `[kirana].receipt_image_match_threshold` in `app/config.toml` (default `0.50`). |
 | Image upload rejected | Empty body, wrong MIME type, or over 10 MB | `ChatService` requires non-empty bytes, optional `image/*` content type check when provided, and `MAX_IMAGE_UPLOAD_BYTES` (`app/chat/service.py`). |
-| Rate-limit SSE events but then failure | Upstream 429 persisted after backoff | Retries use 15s, 30s, 45s, 60s delays (`RATE_LIMIT_RETRY_DELAYS_SECOND`). Reduce concurrency or switch model alias; Gemini routes also wait `gemini_min_interval_seconds` before calls (`app/config.toml`). |
+| Rate-limit SSE events but then failure | Upstream 429 persisted after backoff | Retries use 15s, 30s, 45s, 60s delays (`RATE_LIMIT_RETRY_DELAYS_SECONDS` in `app/chat/service.py`). Reduce concurrency or switch model alias; Gemini routes also wait `gemini_min_interval_seconds` before calls (`app/config.toml`). |
 | Plain-LLM baseline still uses tools in traces | Request flag | Send `tools_enabled: false` on `/api/chat/stream` and `/api/chat/image/stream` ([api](./api.md)). |
+| Gemini chat works but tool stats look empty | Gemini in-agent loop | Gemini records executed tools on `kirana_tool_names` in the final assistant message; if tools were skipped, confirm `tools_enabled` is true and the model alias routes via Gemini ([architecture](./architecture.md#model-routing-and-tool-execution)). |
 
 ## Models and local embeddings
 
