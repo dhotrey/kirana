@@ -2,6 +2,29 @@
 
 Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools for finance lookup and semantic retrieval, routes model calls through Cloudflare AI Gateway, stores chat threads in local SQLite, reads finance data from Cloudflare D1, and searches receipt/item embeddings in Cloudflare Vectorize.
 
+## Application Components
+
+| Path | Role |
+|---|---|
+| `app/main.py` | FastAPI app, HTTP routes, lifespan wiring for D1 and `ChatService`. |
+| `app/chat/service.py` | LangGraph graph, SSE streaming, conversation CRUD, image embedding, rate-limit retries, Logfire spans. |
+| `app/chat/gateway.py` | Cloudflare AI Gateway OpenAI-compatible client; BYOK alias headers per provider. |
+| `app/chat/schemas.py` | Pydantic models for API request/response payloads. |
+| `app/tools/finance.py` | `query_finance_db` — validated read-only D1 `SELECT`. |
+| `app/tools/vectorize.py` | `embed_receipt_query`, `search_receipt_vectors`, `search_item_vectors`; in-process embedding cache. |
+| `app/ingestion/` | Receipt extraction, validation, summary, D1/Vectorize/Tigris writes, embeddings, observability. |
+| `app/ingest_receipts.py` | Receipt image ingestion CLI. |
+| `app/ingest_kb.py` | Splitwise CSV import CLI. |
+| `app/load_item_vectors.py` | Distinct `receipt_items.item_name` → item Vectorize index CLI. |
+| `app/setup.py` | Provisions D1 schema, Vectorize indexes, AI Gateway resource, Tigris bucket. |
+| `app/bench.py` | Query-family benchmark runner against the local chat API. |
+| `app/utils/config.py`, `app/utils/types.py` | Typed `config.toml` loading and validation. |
+| `app/utils/db/d1.py` | Async Cloudflare D1 HTTP client used by finance tools and ingestion. |
+| `app/utils/benchmarks/` | `BenchmarkClient` harness for streaming chat evaluation. |
+| `app/prompts/` | `system_prompt.md` (default agent instructions), `system_icl.md` (benchmark ablation), ingestion prompts. |
+
+Configuration keys for these components are documented in [configuration](./configuration.md).
+
 ## Chat App
 
 - `app/main.py` serves the FastAPI app and static chat UI from `app/index.html`.
@@ -55,6 +78,29 @@ flowchart TD
 ### Uploaded-image chat turns
 
 `ChatService` embeds the upload before the graph runs and places the resulting `embedding_key` in the `HumanMessage` text (`app/chat/service.py`). The model never receives raw pixels in chat. For those turns, retrieval is **`search_item_vectors` → `query_finance_db`**, not `embed_receipt_query` + `search_receipt_vectors` (receipt-summary search is for semantic trip themes from text, using keys produced by `embed_receipt_query`).
+
+### In-process embedding cache
+
+`embed_receipt_query`, uploaded-image turns, and `search_*_vectors` share a per-process dict on `ChatService` (`app/tools/vectorize.py` receives the cache at tool build time). Keys are short hashes; values are float vectors. The cache is not persisted and is lost on server restart — callers must re-embed or re-upload after a restart.
+
+## Model Routing and Tool Execution
+
+All chat and benchmark model calls go through Cloudflare AI Gateway (`app/chat/gateway.py`):
+
+- Base URL: `https://gateway.ai.cloudflare.com/v1/{account_id}/{ai_gateway_name}/compat`
+- Auth header: `cf-aig-authorization: Bearer {CLOUDFLARE_AI_GATEWAY_API_TOKEN}`
+- BYOK alias: `cf-aig-byok-alias` is set to `gemini` for Google AI Studio models and `mistral` for Mistral models so the gateway attaches the correct provider key.
+
+Tool execution diverges by model family inside the LangGraph `agent` node (`app/chat/service.py`):
+
+| Model route | Detection | Tool loop | Why |
+|---|---|---|---|
+| Gemini / Google AI Studio | `model_routes_via_gemini()` in `chat/gateway.py` | In-agent loop: up to three tool rounds executed in `_gemini_agent_response`, then optional synthesis call | Replaying Gemini function-call parts through LangGraph `ToolNode` can fail when Gemini requires `thought_signature` metadata on replay. |
+| Other models (e.g. Mistral) | default | LangGraph `ToolNode` with `tools_condition` routing | Standard OpenAI-compatible tool-calling loop. |
+
+For Gemini with tools enabled, executed tool names are recorded on the final `AIMessage` as `additional_kwargs["kirana_tool_names"]` so SSE `end` stats match the non-Gemini path. Gemini chat requests also wait `gemini_min_interval_seconds` before the graph starts to reduce upstream 429s.
+
+When `tools_enabled` is `false` (plain-LLM benchmark baseline), the agent node binds no tools and skips the Gemini in-agent loop.
 
 ## Finance Store
 

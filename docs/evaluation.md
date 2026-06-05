@@ -37,10 +37,16 @@ Preserve these project-level comparison boundaries:
 
 Current benchmark support in `app/bench.py`:
 
-- Default runs use the first model alias in `app/config.toml` with tools enabled.
-- `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
-- `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
-- `--out` writes each condition to a distinct result JSON.
+| Flag | Effect |
+|---|---|
+| *(no family flags)* | Runs **QF-1 only** with the first model alias in `app/config.toml` and tools enabled. |
+| `--QF1`, `--QF2`, `--QF3`, `--QF4` | Run one query family. Flags can be combined. |
+| `--all` | Runs QF-1 through QF-4 in order. |
+| `--no-tools` | Sets `tools_enabled: false` on chat requests (plain-LLM baseline). |
+| `--system_prompt FILE` | Per-request system prompt override; relative paths resolve from the current directory, then `app/prompts/`. Example: `system_icl.md`. Does not modify repo prompt files. |
+| `--out PATH` | Result JSON path (default `app/kirana_agent_tools_and_instruction_following.json`). |
+
+QF-3 adds random sleeps of 30–60 seconds between cases and before judge calls to reduce rate-limit collisions during semantic judging.
 
 When comparing conditions, keep the knowledge base, benchmark cases, setup state, and evaluation rubric fixed.
 
@@ -68,6 +74,16 @@ Generate benchmark charts from saved result JSON files:
 cd app
 uv run python ../benchmark-results/generate_benchmark_charts.py
 ```
+
+`generate_benchmark_charts.py` expects three result files under `benchmark-results/`:
+
+| Chart label | Source JSON |
+|---|---|
+| Plain LLM (no tools) | `kirana-agent-raw-no-tools.json` |
+| Procedural prompt + tools | `kirana_agent_tools_and_instruction_following.json` |
+| Sparse ICL prompt + tools | `kirana_agent_icl.json` |
+
+Charts are written to `benchmark-results/charts/`.
 
 The benchmark harness is documented in [app/utils/benchmarks/README.md](../app/utils/benchmarks/README.md).
 
