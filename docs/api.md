@@ -113,6 +113,10 @@ Renames an active conversation. This updates the `conversations.title` field and
 }
 ```
 
+### Constraints
+
+- `title` must be 1–120 characters after trimming (`UpdateConversationRequest` in `app/chat/schemas.py`).
+
 ### Errors
 
 - `400 Bad Request`: title is empty after trimming whitespace.
@@ -169,9 +173,9 @@ The persisted message history returns message roles and content. Per-request tim
 
 ## `POST /api/chat/stream`
 
-Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph has an agent node and a dedicated tool-calling node with conditional routing. The registered `query_finance_db` tool runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database tables/views `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`; currency conversion should happen in SQL with expressions such as `ROUND(SUM(total_cents) / 100.0, 2)`. The model call is routed through Cloudflare AI Gateway using the selected model alias.
+Sends a user message to the LangGraph chat graph and streams the assistant response from the Cloudflare AI Gateway as Server-Sent Events (SSE). The graph has an agent node and a dedicated tool-calling node with conditional routing. The registered `query_finance_db` tool runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database tables/views `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`; currency conversion should happen in SQL with expressions such as `ROUND(SUM(total_cents) / 100.0, 2)`. The validator rejects SQL that combines `receipts` with Splitwise/accounting tables in one statement — query each side separately and reconcile in the answer. Results are capped at 100 rows per call. The model call is routed through Cloudflare AI Gateway using the selected model alias.
 
-Gemini routes execute requested tools inside the agent node and then synthesize from plain-text tool results. This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata.
+Gemini routes execute requested tools inside the agent node and then synthesize from plain-text tool results. This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata. The in-process loop allows up to three tool-request rounds, then sends a synthesis prompt that forbids further tool calls. See [architecture](./architecture.md#gemini-vs-langgraph-tool-execution).
 
 Each model call is prefixed with `prompts/system_prompt.md` plus a runtime date line formatted as `Today's date is YYYY-MM-DD.`. The system message is injected at call time and is not persisted in the conversation transcript returned by `/api/conversations/{thread_id}/messages`.
 
@@ -179,7 +183,7 @@ If `thread_id` is omitted or unknown, the service creates a new conversation and
 
 Finance database tool calls use a shared `D1Database` client created during application startup from `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID`. If these are unavailable, the chat stream still starts, but the assistant receives a tool error and should report that structured finance lookup is unavailable. Tool calls and D1 queries are logged with Loguru and, when Logfire is enabled, recorded as spans with query text, row counts, and latency metadata.
 
-LLM calls that fail with a 429 rate-limit response are retried with backoff waits of 15, 30, 45, and 60 seconds before each subsequent attempt (up to four waits; see `RATE_LIMIT_RETRY_DELAYS_SECOND` in `app/chat/service.py`). Each wait emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
+LLM calls that fail with a 429 rate-limit response are retried with backoff waits of 15, 30, 45, and 60 seconds before each subsequent attempt (up to four waits; see `RATE_LIMIT_RETRY_DELAYS_SECONDS` in `app/chat/service.py`). Each wait emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
 
 ### Request
 
