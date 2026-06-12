@@ -8,7 +8,17 @@ uv sync
 uv run python setup.py
 ```
 
-`setup.py` is intended to be safe to rerun for schema creation, metadata/index setup, and an existing Tigris bucket. If `KIRANA_DB_ID` is unset and a D1 database with the configured name already exists, set `KIRANA_DB_ID` in `app/.env` and rerun the script.
+`setup.py` is safe to rerun for some resources but not all. Treat it as idempotent only where noted below. If `KIRANA_DB_ID` is unset and a D1 database with the configured name already exists, set `KIRANA_DB_ID` in `app/.env` and rerun the script.
+
+| Resource | Rerun behavior |
+|---|---|
+| D1 tables, views, indexes | Idempotent (`CREATE … IF NOT EXISTS` in `app/utils/db/db_setup.py`). |
+| Tigris bucket | Idempotent when the bucket already exists (`BucketAlreadyOwnedByYou` / `BucketAlreadyExists`). |
+| Vectorize indexes | **Not idempotent** — `indexes.create` runs unconditionally and fails if the index name already exists. |
+| Vectorize metadata indices | **Not idempotent** — metadata index creation fails when the property already exists. |
+| AI Gateway | **Not idempotent** — gateway `create` fails when `kirana-ai-gateway` already exists. |
+
+For Vectorize or gateway resources that already exist, skip those setup steps or manage them in the Cloudflare dashboard. `load_item_vectors.py` can create the item Vectorize index and metadata indices if they are missing (`app/ingestion/items_vectorize.py`).
 
 ## Required `.env`
 
@@ -137,20 +147,18 @@ This project uses bring-your-own-key (BYOK) provider keys through AI Gateway. Co
 1. In Cloudflare, go to AI -> AI Gateway -> `kirana-ai-gateway`.
 2. Open Provider Keys.
 3. Select Add API Key.
-4. Add keys for these providers:
-   - Google AI Studio
-   - Groq
-   - Mistral AI
-   - OpenRouter
-5. Keep the key alias as `default` unless the code explicitly sends a `cf-aig-byok-alias` header.
+4. Add keys for the providers used in `app/config.toml` (currently Google AI Studio and Mistral AI).
+5. Set the provider key **alias** to match what the app sends in `cf-aig-byok-alias`:
+   - `gemini` for Google AI Studio routes (`google-ai-studio/...` models in ingestion and chat).
+   - `mistral` for Mistral routes (`mistral/...` models).
 6. Save each provider key and confirm it appears as active in the Provider Keys list.
 
 Get the provider API keys from each provider console:
 
 - Google AI Studio: create a Gemini API key in Google AI Studio.
-- Groq: create an API key in the Groq console.
 - Mistral AI: create an API key in La Plateforme / Mistral console.
-- OpenRouter: create an API key in the OpenRouter account settings.
+
+The alias mapping is implemented in `app/chat/gateway.py` (`gateway_byok_alias`) and mirrored in `app/ingestion/context.py` for ingestion model calls.
 
 Provider keys are stored in Cloudflare's AI Gateway/Secrets Store configuration. They should not be copied into this repository's `.env`; the app authenticates to the gateway with `CLOUDFLARE_AI_GATEWAY_API_TOKEN`, and the gateway attaches the correct upstream provider key at request time.
 

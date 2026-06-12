@@ -50,6 +50,8 @@ Run this after receipt ingestion has populated D1:
 uv run python load_item_vectors.py
 ```
 
+If the item Vectorize index or its `item_name` metadata index is missing (for example after a partial `setup.py` failure), `load_item_vectors.py` creates them before upserting vectors (`app/ingestion/items_vectorize.py`). This is safer to rerun than `setup.py` for the item index alone.
+
 Exercise the D1 read and local embedding flow without writing to Vectorize:
 
 ```sh
@@ -89,7 +91,24 @@ Then run from `app/`:
 uv run python ingest_kb.py
 ```
 
-The importer reads the configured CSV, skips empty rows and rows without a cost, converts money fields to integer cents, and inserts batched rows into the `splits` table. It expects `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID` to be available in `app/.env` or the shell.
+The importer reads the configured CSV, skips the header row, skips empty rows and rows without a cost, converts money fields to integer cents, and inserts batched rows into the `splits` table. It expects `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID` to be available in `app/.env` or the shell.
+
+### Expected CSV layout
+
+`app/ingest_kb.py` assumes Splitwise's default export column order (0-based indices):
+
+| Index | Column | Imported as |
+|---:|---|---|
+| 0 | Date | `date` |
+| 1 | Description | `description` |
+| 2 | Category | `category` |
+| 3 | Cost | `cost_cents` (converted) |
+| 4 | Currency | `currency` |
+| 5 | You paid | `me_cents` (converted) |
+| 6 | Roommate 1 | `roommate1_cents` (converted) |
+| 7 | Roommate 2 | `roommate2_cents` (converted) |
+
+Rows are inserted in batches of 12 (D1 variable limit ÷ 8 columns). **Rerunning `ingest_kb.py` appends duplicate rows** — there is no truncate or upsert step. Clear `splits` manually in D1 before a fresh import if needed.
 
 ---
 
@@ -115,7 +134,7 @@ flowchart TD
 At startup, the CLI loads configuration and credentials, creates API clients for Cloudflare and Tigris, initializes the embedding model, and prepares model agents routed through Cloudflare AI Gateway. It then resolves the input set:
 
 - `--image` limits the run to a single file.
-- Without `--image`, the configured `receipts_image_dir` is scanned for supported image files.
+- Without `--image`, the configured `receipts_image_dir` is scanned for supported image files (`.jpg`, `.jpeg`, `.png`, `.webp` per `app/ingestion/sources/disk.py`).
 - Images are processed sequentially so rate limits, logs, and failures are easy to inspect.
 
 ---
@@ -277,6 +296,15 @@ All major receipt stages are instrumented as Pydantic Logfire spans. Each proces
 
 There are no persistent local telemetry services. Traces go to Logfire, and local artifacts/logs exist only as explicit run output.
 
+### Canonical per-receipt logs
+
+Each processed receipt writes one JSON file under `[ingestion].logs_dir` (default `app/logs/`):
+
+- Successful non-dry-run writes: `{receipt_id}.json`
+- Dry-run or pre-assignment failures: `{image_id}.json` (image stem from the source filename)
+
+Fields include `outcome`, `error`, `receipt_id`, `store_name`, `date`, per-stage `latency_seconds`, token counts, retry counts, validation tolerance stats, and `dry_run`. See `CanonicalLog` in `app/ingestion/canonical_log.py`.
+
 ---
 
 ## Error Handling
@@ -293,9 +321,27 @@ The CLI processes receipts independently. A failure on one image is captured in 
 
 ---
 
-## Constants to Fix Before Evaluation
+## Ingestion Configuration
 
-- Maximum JSON extraction retry attempts.
-- Pydantic sum-of-items tolerance.
-- Splitwise fuzzy join tolerance, including date window and amount tolerance.
+Key values in `app/config.toml` `[ingestion]` (see `app/utils/types.py` for validation):
+
+| Key | Stock value | Effect |
+|---|---|---|
+| `max_ocr_retries` | `3` | Extraction/validation retry loop cap in `app/ingestion/gemini.py`. |
+| `sum_tolerance_pct` | `5.0` | Allowed line-item sum vs. subtotal drift for Pydantic validation. |
+| `retry_backoff_strategy` | `exponential` | Backoff between OCR retries (`constant`, `linear`, or `exponential`). |
+| `retry_backoff_base_seconds` | `1.0` | Initial backoff delay. |
+| `retry_backoff_max_seconds` | `30.0` | Backoff ceiling. |
+| `gemini_min_interval_seconds` | `12.0` | Minimum spacing between Gemini calls (ingestion and chat). |
+| `embedding_model` | `Qwen/Qwen3-VL-Embedding-2B` | Local embedding model for summaries and item names. |
+| `embedding_dim` | `1536` | Must divide 1536 (Matryoshka truncation). |
+| `embedding_image_max_dimension` | `256` | Longest-side resize before image embedding. |
+
+Note: `gemini_rpm` is defined in config but not read by current code; rate limiting uses `gemini_min_interval_seconds` instead.
+
+### Evaluation tolerances (not yet enforced in ingestion)
+
+These remain research constants to fix before cross-run comparisons:
+
+- Splitwise fuzzy join tolerance (date window and amount tolerance for receipt↔split matching at query time).
 - Numerical answer tolerance for evaluation: `±$3` or `±5%`, whichever is larger.

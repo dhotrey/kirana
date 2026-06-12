@@ -10,7 +10,7 @@ Symptoms and fixes for local Kirana development. All behavior below is grounded 
 | `Unknown embedding_key` from vector tools | Server restart or different process than the one that created the key | Embedding vectors live in an in-process dict in `ChatService` (`app/chat/service.py`). Start a new chat turn after restart; for text queries call `embed_receipt_query` again before `search_receipt_vectors`. |
 | Uploaded-image answers feel random or always "no" | Item index empty or threshold too strict | Run `uv run python load_item_vectors.py` after receipts exist ([ingestion](./ingestion.md)). Tune `[kirana].receipt_image_match_threshold` in `app/config.toml` (default `0.50`). |
 | Image upload rejected | Empty body, wrong MIME type, or over 10 MB | `ChatService` requires non-empty bytes, optional `image/*` content type check when provided, and `MAX_IMAGE_UPLOAD_BYTES` (`app/chat/service.py`). |
-| Rate-limit SSE events but then failure | Upstream 429 persisted after backoff | Retries use 15s, 30s, 45s, 60s delays (`RATE_LIMIT_RETRY_DELAYS_SECOND`). Reduce concurrency or switch model alias; Gemini routes also wait `gemini_min_interval_seconds` before calls (`app/config.toml`). |
+| Rate-limit SSE events but then failure | Upstream 429 persisted after backoff | Retries use 15s, 30s, 45s, 60s delays (`RATE_LIMIT_RETRY_DELAYS_SECONDS`). Reduce concurrency or switch model alias; Gemini routes also wait `gemini_min_interval_seconds` before calls (`app/config.toml`). |
 | Plain-LLM baseline still uses tools in traces | Request flag | Send `tools_enabled: false` on `/api/chat/stream` and `/api/chat/image/stream` ([api](./api.md)). |
 
 ## Models and local embeddings
@@ -25,7 +25,10 @@ Symptoms and fixes for local Kirana development. All behavior below is grounded 
 | Symptom | Likely cause | What to do |
 |--------|----------------|------------|
 | Receipt ingestion fails on models | AI Gateway not finished | Complete Authenticated Gateway and provider keys before `ingest_receipts.py` ([setup](./setup.md#finish-cloudflare-ai-gateway-setup)). |
-| Splitwise import errors | Wrong CSV path or schema | Check `[knowledge_base].splitwise_csv_path` in `app/config.toml` points at a real export file. |
+| Splitwise import errors | Wrong CSV path or schema | Check `[knowledge_base].splitwise_csv_path` in `app/config.toml` points at a real export file. The importer expects the default 8-column Splitwise export layout ([ingestion](./ingestion.md#expected-csv-layout)). |
+| Duplicate Splitwise rows after re-import | `ingest_kb.py` always appends | Truncate `splits` in D1 before rerunning, or accept duplicate accounting rows. |
+| `setup.py` fails on second run | Vectorize/gateway already exist | D1 and Tigris are idempotent; Vectorize index and AI Gateway creation are not ([setup](./setup.md)). |
+| AI Gateway 401/403 on model calls | BYOK alias mismatch | Provider keys must use aliases `gemini` and `mistral` to match `app/chat/gateway.py` headers ([setup](./setup.md#add-provider-keys)). |
 | Semantic receipt search returns nothing | Summaries not embedded or wrong index | Run full `ingest_receipts.py` pipeline; confirm index name `kirana-reciept-summaries` in config matches Vectorize. |
 
 ## Operational pitfalls
