@@ -45,12 +45,54 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## LangGraph Shape
+
+The compiled graph in `app/chat/service.py` has two nodes:
+
+- `agent`: builds the system prompt, selects the model, and either runs the standard OpenAI-compatible tool loop (Mistral and other non-Gemini aliases) or the Gemini-specific inline tool path described below.
+- `tools`: LangGraph `ToolNode` over all registered tools.
+
+Edges: `START → agent`, conditional `agent → tools | END` via `tools_condition`, and `tools → agent` for follow-up synthesis after tool results.
+
+Conversation state is checkpointed in local SQLite through `AsyncSqliteSaver`. Tool routing and `tools_enabled` are passed through LangGraph `configurable` metadata per request rather than being hidden in synthesis prompts.
+
 ## Implemented Tools
 
 - `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
+
+### Tool contracts and constraints
+
+**`query_finance_db`** (`app/tools/finance.py`):
+
+- Only single-statement `SELECT` queries; semicolons, SQL comments, and write/DDL keywords are rejected.
+- Allowed tables/views: `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+- Receipt totals and Splitwise/accounting views cannot appear in the same query; the agent must query them separately and reconcile in natural language.
+- Results are capped at 100 rows (`truncated: true` when more rows exist). Amounts are stored as integer cents; dollar conversion belongs in SQL (`ROUND(cents / 100.0, 2)`).
+- Responses are JSON: `{ok, sql, columns, row_count, rows, truncated}` or `{ok: false, error}`.
+
+**Vectorize tools** (`app/tools/vectorize.py`):
+
+- `embed_receipt_query` returns a 24-character hex `embedding_key` derived from model, dimension, and normalized query text. Keys live in a per-`ChatService` in-memory dict and are lost on process restart.
+- `search_receipt_vectors` accepts `embedding_key` or a raw vector, optional metadata filters on indexed fields only, and `top_k` (default `[kirana].receipt_vector_search_top_k`). ISO `YYYY-MM-DD` date filters are normalized to numeric `YYYYMMDD`. Filter JSON must serialize to under 2048 bytes.
+- `search_item_vectors` searches the item-name index only; date, store, receipt, and amount constraints must be applied afterward through `query_finance_db`.
+- Vectorize query responses include `matches`, derived `receipt_ids` or `item_names`, and `match_count`.
+
+**Embedding cache semantics**: text queries use `embed_receipt_query`; uploaded images are embedded in `ChatService` before the graph runs and expose their key in the `HumanMessage` text. Both paths share the same cache dict for the lifetime of the server process.
+
+### Gemini vs. other model routes
+
+Model aliases whose identifier contains `gemini` or `google-ai-studio` bypass the LangGraph `ToolNode` loop. Instead, `ChatService._gemini_agent_response`:
+
+1. Calls the model with tools bound directly.
+2. Executes requested tools inline and appends plain-text `ToolMessage` results (up to three tool rounds).
+3. If tool rounds exhaust, sends a synthesis-only follow-up that forbids further tool calls.
+
+This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata. Non-Gemini aliases use the standard `agent ↔ tools` LangGraph loop with `model.bind_tools(...)`.
+
+Gateway requests for all chat models go through `app/chat/gateway.py`, which sets `cf-aig-authorization` and a BYOK alias header (`gemini` or `mistral`) when applicable.
 
 ### Uploaded-image chat turns
 

@@ -37,10 +37,11 @@ Preserve these project-level comparison boundaries:
 
 Current benchmark support in `app/bench.py`:
 
+- `--all` runs QF-1 through QF-4. Omit it and pass one or more of `--QF1`, `--QF2`, `--QF3`, `--QF4` to run individual families.
 - Default runs use the first model alias in `app/config.toml` with tools enabled.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
-- `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
-- `--out` writes each condition to a distinct result JSON.
+- `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files. Relative paths resolve from the current directory, then `app/prompts/`.
+- `--out` writes each condition to a distinct result JSON (default: `app/kirana_agent_tools_and_instruction_following.json`).
 
 When comparing conditions, keep the knowledge base, benchmark cases, setup state, and evaluation rubric fixed.
 
