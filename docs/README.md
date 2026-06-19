@@ -13,6 +13,8 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 - [API Endpoints](./api.md): FastAPI Swagger/OpenAPI locations and the current chat API request/response contracts.
 - [Evaluation](./evaluation.md): query families, ablation boundaries, benchmark commands, correctness rules, and runtime telemetry.
 - [Troubleshooting](./troubleshooting.md): common chat, embedding, ingestion, and configuration pitfalls with fixes.
+- [Development Guide](./development.md): codebase module map, pytest workflow, and `config.toml` reference.
+- [Development Guide](./development.md): codebase layout, pytest workflow, and `config.toml` reference.
 - [Benchmark Harness](../app/utils/benchmarks/README.md): local benchmark client usage against the streaming chat API.
 
 ## Common Entry Points
@@ -21,6 +23,7 @@ Run these from `app/` unless noted otherwise:
 
 ```sh
 uv sync
+uv run pytest
 uv run python main.py
 uv run python setup.py
 uv run python ingest_kb.py

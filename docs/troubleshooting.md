@@ -28,6 +28,14 @@ Symptoms and fixes for local Kirana development. All behavior below is grounded 
 | Splitwise import errors | Wrong CSV path or schema | Check `[knowledge_base].splitwise_csv_path` in `app/config.toml` points at a real export file. |
 | Semantic receipt search returns nothing | Summaries not embedded or wrong index | Run full `ingest_receipts.py` pipeline; confirm index name `kirana-reciept-summaries` in config matches Vectorize. |
 
+## Development and tests
+
+| Symptom | Likely cause | What to do |
+|--------|----------------|------------|
+| `uv: command not found` | `uv` not on PATH | Install from [https://docs.astral.sh/uv/](https://docs.astral.sh/uv/) or use the project install script, then run commands from `app/`. |
+| Pytest import errors | Wrong working directory | Run `uv sync` and `uv run pytest` from `app/` ([development](./development.md)). |
+| Logfire warning during pytest | Logfire not configured in test env | Expected for some chat tests; set `KIRANA_DISABLE_LOGFIRE=1` or provide `LOGFIRE_TOKEN`. Warnings do not fail the suite by default. |
+
 ## Operational pitfalls
 
 - **UI works, answers do not**: Starting `uv run python main.py` without setup, gateway keys, or ingestion is expected to yield empty or tool-error-backed replies ([README](../README.md#get-running)).
