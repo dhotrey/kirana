@@ -37,7 +37,9 @@ Preserve these project-level comparison boundaries:
 
 Current benchmark support in `app/bench.py`:
 
-- Default runs use the first model alias in `app/config.toml` with tools enabled.
+- Default run (no family flags): executes **QF-1 only** with the first model alias in `app/config.toml` and tools enabled.
+- `--all`: runs QF-1 through QF-4 in one invocation.
+- `--QF1`, `--QF2`, `--QF3`, `--QF4`: run a single query family.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.
@@ -57,7 +59,9 @@ Run benchmarks from a second shell:
 
 ```sh
 cd app
+uv run python bench.py
 uv run python bench.py --all
+uv run python bench.py --QF2
 uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-results/kirana_agent_icl.json
 uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-raw-no-tools.json
 ```
@@ -97,3 +101,5 @@ Each stored `agent_response` includes cumulative telemetry across the turns in t
 - `turns`: number of turns represented in the response, including prior turns for QF4 follow-ups.
 
 For QF3, `judge_telemetry` separately records judge-call `latency_seconds`, `input_tokens`, `output_tokens`, and `total_tokens`.
+
+QF-3 also sleeps a random `30`–`60` seconds between cases and before judge calls to reduce upstream rate-limit pressure during long benchmark runs.
