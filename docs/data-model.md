@@ -78,6 +78,8 @@ CASE
 END AS my_share_cents
 ```
 
+Query-time access through `query_finance_db` must not join `receipts` or `receipt_items` with these Splitwise views in a single SQL statement. Query receipt evidence and personal-share accounting separately, then reconcile in the agent answer.
+
 ### `roommate1_expenses`
 
 Adds:
