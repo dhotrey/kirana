@@ -223,6 +223,19 @@ def main():
     )
     setup_ai_gateway(cf_client, cloudflare_account_id_secret, infra_config)
 
+    cloudflare_ai_gateway_api_token_secret = SecretStr(
+        os.environ.get("CLOUDFLARE_AI_GATEWAY_API_TOKEN") or ""
+    )
+    if cloudflare_ai_gateway_api_token_secret.get_secret_value() == "":
+        raise SetupError(
+            "CLOUDFLARE_AI_GATEWAY_API_TOKEN is not set. "
+            "After the AI Gateway is created above, generate a bearer token in the "
+            "Cloudflare dashboard (AI Gateway > your gateway > API > Create token) "
+            "and add CLOUDFLARE_AI_GATEWAY_API_TOKEN=<token> to .env."
+        )
+    else:
+        log.info("CLOUDFLARE_AI_GATEWAY_API_TOKEN is set")
+
     setup_tigris(infra_config)
 
 
