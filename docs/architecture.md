@@ -45,9 +45,33 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+### Model routing: Gemini vs. LangGraph ToolNode
+
+`app/chat/gateway.py` treats model identifiers containing `gemini` or `google-ai-studio` as Gemini routes. Other aliases (for example `mistral`) use the LangGraph `ToolNode` loop shown above.
+
+| Route | Tool execution | Why |
+|---|---|---|
+| Non-Gemini | `agent` → `tools_condition` → `ToolNode` → `agent` | Standard OpenAI-compatible function-calling through LangGraph |
+| Gemini | In-agent loop in `ChatService._gemini_agent_response` | Avoids replaying Gemini function-call parts through LangGraph, which can fail when Gemini requires `thought_signature` metadata |
+
+Gemini tool flow (`app/chat/service.py`):
+
+1. Bind tools and call the model (up to three tool rounds).
+2. Execute each requested tool in-process via `self._tool_by_name[name].ainvoke(...)`.
+3. Append plain-text `ToolMessage` results and call the model again.
+4. After three tool rounds, send a synthesis prompt that forbids further tool calls.
+5. Record executed tool names in `AIMessage.additional_kwargs["kirana_tool_names"]` for SSE stats.
+
+Gemini chat turns also wait `ingestion.gemini_min_interval_seconds` before the first model call (`GeminiRateLimiter`).
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database (`app/tools/finance.py`). Validation rules:
+  - Only a single `SELECT` statement; semicolons and SQL comments (`--`, `/* */`) are rejected.
+  - Allowed tables/views: `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+  - Write/DDL keywords (`INSERT`, `UPDATE`, `DELETE`, `CREATE`, …) are blocked.
+  - **Receipt and Splitwise data cannot be joined in one query.** If the SQL references both `receipts` (or `receipt_items`) and any Splitwise view/table, validation fails. Query receipt totals and personal-share views separately, then reconcile in the model answer.
+  - Results are capped at 100 rows (`MAX_RESULT_ROWS`); larger result sets return `"truncated": true`.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
