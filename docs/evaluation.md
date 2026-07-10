@@ -38,9 +38,11 @@ Preserve these project-level comparison boundaries:
 Current benchmark support in `app/bench.py`:
 
 - Default runs use the first model alias in `app/config.toml` with tools enabled.
+- With no family flags, only **QF-1** runs. Pass `--all` or `--QF1` / `--QF2` / `--QF3` / `--QF4` to select families.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.
+- QF-3 inserts a random 30–60 second sleep between cases and before judge calls to reduce upstream rate limits.
 
 When comparing conditions, keep the knowledge base, benchmark cases, setup state, and evaluation rubric fixed.
 
@@ -57,6 +59,7 @@ Run benchmarks from a second shell:
 
 ```sh
 cd app
+uv run python bench.py              # QF-1 only (default)
 uv run python bench.py --all
 uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-results/kirana_agent_icl.json
 uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-raw-no-tools.json
