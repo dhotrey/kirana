@@ -12,6 +12,7 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 - [Ingestion Pipeline](./ingestion.md): receipt CLI flow, Splitwise import separation, storage responsibilities, observability, and error handling.
 - [API Endpoints](./api.md): FastAPI Swagger/OpenAPI locations and the current chat API request/response contracts.
 - [Evaluation](./evaluation.md): query families, ablation boundaries, benchmark commands, correctness rules, and runtime telemetry.
+- [Testing](./testing.md): pytest layout, commands, coverage map, and what remains manual.
 - [Troubleshooting](./troubleshooting.md): common chat, embedding, ingestion, and configuration pitfalls with fixes.
 - [Benchmark Harness](../app/utils/benchmarks/README.md): local benchmark client usage against the streaming chat API.
 
@@ -27,6 +28,7 @@ uv run python ingest_kb.py
 uv run python ingest_receipts.py
 uv run python load_item_vectors.py
 uv run python bench.py --all
+uv run pytest
 ```
 
 Generate saved benchmark charts through the `app/` uv environment:
