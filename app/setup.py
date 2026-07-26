@@ -215,6 +215,17 @@ def main():
                 "obtained from https://dash.cloudflare.com/profile/accounts."
             )
 
+    cloudflare_ai_gateway_api_token_secret = SecretStr(
+        os.environ.get("CLOUDFLARE_AI_GATEWAY_API_TOKEN") or ""
+    )
+    if cloudflare_ai_gateway_api_token_secret.get_secret_value() == "":
+        raise SetupError(
+            "CLOUDFLARE_AI_GATEWAY_API_TOKEN is not set "
+            "(required as the AI Gateway bearer token for OpenAI-compatible routes)"
+        )
+    else:
+        log.info("CLOUDFLARE_AI_GATEWAY_API_TOKEN is set")
+
     setup_d1(cf_client, cloudflare_account_id_secret, infra_config)
 
     setup_vectorize(cf_client, cloudflare_account_id_secret, infra_config)
