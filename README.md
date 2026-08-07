@@ -75,6 +75,7 @@ More setup, ingestion, API, and evaluation details live in [docs/](docs/README.m
 | [Ingestion Pipeline](docs/ingestion.md) | Receipt ingestion, Splitwise import, item-vector indexing, storage responsibilities, and dry-run behavior. |
 | [API Endpoints](docs/api.md) | FastAPI routes, request/response shapes, SSE events, and Swagger/OpenAPI locations. |
 | [Evaluation](docs/evaluation.md) | Query families, ablation boundaries, benchmark commands, and metrics. |
+| [Testing](docs/testing.md) | Pytest layout, offline test suite, and where to add coverage. |
 | [Troubleshooting](docs/troubleshooting.md) | Chat tool errors, embedding cache, gateway setup, and ingestion pitfalls. |
 | [Docs Index](docs/README.md) | Complete documentation index and common entry points. |
 
