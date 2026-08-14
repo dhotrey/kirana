@@ -108,6 +108,21 @@ END AS roommate2_share_cents
 | `idx_receipt_items_receipt_id` | `receipt_items` | `receipt_id` | Receipt-to-line-item joins. |
 | `idx_receipt_items_name` | `receipt_items` | `item_name` | Item-name lookup and fuzzy candidate verification. |
 
+## Finance SQL Tool Constraints
+
+`query_finance_db` (`app/tools/finance.py`) validates every agent-generated query before D1 execution:
+
+| Rule | Detail |
+|---|---|
+| Statement type | `SELECT` only; rejects `INSERT`, `UPDATE`, `DELETE`, DDL, pragmas, and multi-statement batches. |
+| Comments | Blocked (`--`, `/*`, `*/`). |
+| Table allowlist | `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`. |
+| Receipt vs Splitwise | A single query cannot reference both `receipts` and any Splitwise table/view (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`). Query each side separately and reconcile in the agent. |
+| Row cap | Up to 100 rows returned per call; larger result sets are truncated with `truncated: true` in the tool JSON. |
+| Money | Store columns are integer cents; convert to dollars in SQL with `ROUND(cents_column / 100.0, 2)`. |
+
+Tests for these rules live in `app/tests/test_chat_tools.py`.
+
 ## Cloudflare Vectorize
 
 Both Vectorize indexes use:

@@ -52,6 +52,24 @@ flowchart TD
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
 
+`query_finance_db` validation (`app/tools/finance.py`) enforces:
+
+- One `SELECT` only; no comments, semicolon-separated statements, or write/DDL keywords.
+- Tables must be from the allowlist: `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+- **Receipt and Splitwise data cannot appear in the same SQL statement.** If a question needs both receipt totals and personal-share views, the agent must run separate queries and reconcile in synthesis.
+- Results are capped at 100 rows per call (`MAX_RESULT_ROWS`).
+
+### Gemini vs LangGraph tool routing
+
+Model routing is determined by `model_routes_via_gemini` in `app/chat/gateway.py`: identifiers containing `gemini` or `google-ai-studio` use the Gemini path.
+
+| Path | When | Behavior |
+|---|---|---|
+| Gemini in-agent loop | Gemini alias + `tools_enabled` | `_gemini_agent_response` binds tools, runs up to three tool rounds inside the agent node, then a final synthesis call without tools. Tool results are plain `ToolMessage` text, not replayed Gemini function-call parts (avoids `thought_signature` failures in the OpenAI-compatible gateway). |
+| LangGraph `ToolNode` | Mistral and other non-Gemini aliases | Standard agent → `tools_condition` → `ToolNode` → agent loop. |
+
+Gemini chat turns also call `GeminiRateLimiter.wait` before the graph starts (`[ingestion].gemini_min_interval_seconds` in `app/config.toml`). This is separate from HTTP 429 backoff (`RATE_LIMIT_RETRY_DELAYS_SECONDS`).
+
 ### Uploaded-image chat turns
 
 `ChatService` embeds the upload before the graph runs and places the resulting `embedding_key` in the `HumanMessage` text (`app/chat/service.py`). The model never receives raw pixels in chat. For those turns, retrieval is **`search_item_vectors` → `query_finance_db`**, not `embed_receipt_query` + `search_receipt_vectors` (receipt-summary search is for semantic trip themes from text, using keys produced by `embed_receipt_query`).
