@@ -45,9 +45,28 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model Routing and Tool Execution
+
+Model aliases in `app/config.toml` map to gateway identifiers such as `mistral/mistral-large-latest` or `google-ai-studio/gemini-3.1-flash-lite-preview`. `app/chat/gateway.py` routes calls through Cloudflare AI Gateway and sets `cf-aig-byok-alias` for Gemini and Mistral providers.
+
+Tool execution diverges by provider:
+
+| Route | Detection | Tool loop |
+|---|---|---|
+| Gemini | `model_routes_via_gemini()` — identifier contains `gemini` or `google-ai-studio` | In-agent loop in `ChatService._gemini_agent_response` (`app/chat/service.py`). Up to three tool rounds run inside the agent node; tool results are plain-text `ToolMessage` values, then a final synthesis call without tools. Executed tool names are stored on `AIMessage.additional_kwargs["kirana_tool_names"]` for stats. |
+| Non-Gemini | All other configured aliases | Standard LangGraph `ToolNode` with `tools_condition` routing between `agent` and `tools` nodes. |
+
+Gemini uses the in-agent loop because replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop can fail when Gemini requires `thought_signature` metadata. Gemini routes also call `GeminiRateLimiter.wait()` before each chat request (`gemini_min_interval_seconds` in `app/config.toml`).
+
+429 rate-limit responses retry with `RATE_LIMIT_RETRY_DELAYS_SECONDS` (`15, 30, 45, 60` seconds) before each subsequent attempt, emitting `rate_limit_retry` SSE events.
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. Validation rules in `app/tools/finance.py`:
+  - Allowed tables/views: `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+  - Single `SELECT` only; no comments, semicolon-separated statements, or write/DDL keywords.
+  - Receipt tables (`receipts`, `receipt_items`) cannot appear in the same query as Splitwise accounting tables (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`). Query each side separately and reconcile in the answer.
+  - Results are capped at 100 rows.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.

@@ -37,7 +37,8 @@ Preserve these project-level comparison boundaries:
 
 Current benchmark support in `app/bench.py`:
 
-- Default runs use the first model alias in `app/config.toml` with tools enabled.
+- **Default family**: running `bench.py` with no flags executes **QF-1 only** (`selected_query_families()` falls back to `["QF-1"]`). Use `--all` or `--QF1` / `--QF2` / `--QF3` / `--QF4` to select other families.
+- Default model: first alias in `app/config.toml` `[kirana].available_models`, with tools enabled.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.
@@ -57,7 +58,9 @@ Run benchmarks from a second shell:
 
 ```sh
 cd app
+uv run python bench.py                    # QF-1 only (default)
 uv run python bench.py --all
+uv run python bench.py --QF3              # single family
 uv run python bench.py --all --system_prompt system_icl.md --out ../benchmark-results/kirana_agent_icl.json
 uv run python bench.py --all --no-tools --out ../benchmark-results/kirana-agent-raw-no-tools.json
 ```
