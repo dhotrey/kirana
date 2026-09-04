@@ -45,9 +45,55 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model Routing
+
+Chat models are configured in `app/config.toml` and built through Cloudflare AI Gateway (`app/chat/gateway.py`). Model execution splits into two paths inside `ChatService._agent_node` (`app/chat/service.py`):
+
+| Path | When | Behavior |
+|---|---|---|
+| Gemini in-agent loop | Model identifier contains `gemini` or `google-ai-studio`, and tools are enabled | `_gemini_agent_response` binds tools, runs up to three tool rounds inside the agent node, executes tools directly, then synthesizes a final answer without routing through LangGraph `ToolNode`. |
+| LangGraph tool loop | All other models, or `tools_enabled=false` | Standard LangGraph graph: agent node → `tools_condition` → `ToolNode` → agent node. |
+
+Gemini uses the in-agent loop because replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop can fail when Gemini requires `thought_signature` metadata. Non-Gemini models use the shared `ToolNode` path.
+
+Additional Gemini-specific behavior:
+
+- `GeminiRateLimiter` enforces `ingestion.gemini_min_interval_seconds` between Gemini calls.
+- Rate-limit retries (`RATE_LIMIT_RETRY_DELAYS_SECONDS`: 15, 30, 45, 60 seconds) apply to both paths.
+
+```mermaid
+flowchart TD
+    Turn["User turn"] --> Agent["_agent_node"]
+    Agent --> Route{"Gemini + tools?"}
+    Route -- "Yes" --> GeminiLoop["_gemini_agent_response<br/>bind tools → execute → synthesize"]
+    Route -- "No" --> BindTools{"tools enabled?"}
+    BindTools -- "Yes" --> LGAgent["LangGraph agent + bind_tools"]
+    BindTools -- "No" --> LGAgentPlain["LangGraph agent, no tools"]
+    LGAgent --> Cond{"tool calls?"}
+    Cond -- "Yes" --> ToolNode["ToolNode"]
+    ToolNode --> LGAgent
+    Cond -- "No" --> Done["Assistant message"]
+    LGAgentPlain --> Done
+    GeminiLoop --> Done
+```
+
 ## Implemented Tools
 
 - `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+
+### Finance SQL validation (`query_finance_db`)
+
+Validation lives in `app/tools/finance.py` (`validate_finance_sql`). The tool rejects queries that violate these rules:
+
+| Rule | Detail |
+|---|---|
+| Statement type | Single `SELECT` only; semicolons and multi-statement SQL are rejected. |
+| Allowed tables/views | `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`. |
+| Receipt vs. Splitwise isolation | A query cannot reference both `receipts` and any Splitwise/accounting table (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`) in one statement. Query receipt totals and Splitwise rows separately, then reconcile in the answer. |
+| Comments | SQL comments (`--`, `/* */`) are not allowed. |
+| Result cap | At most 100 rows are returned; larger result sets are truncated with `"truncated": true`. |
+| Money | Amounts are stored as integer cents; convert to dollars in SQL, e.g. `ROUND(SUM(total_cents) / 100.0, 2)`. |
+
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
