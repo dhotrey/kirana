@@ -183,6 +183,9 @@ def main():
     cloudflare_api_token_secret = SecretStr(
         os.environ.get("CLOUDFLARE_API_TOKEN") or ""
     )
+    cloudflare_ai_gateway_api_token_secret = SecretStr(
+        os.environ.get("CLOUDFLARE_AI_GATEWAY_API_TOKEN") or ""
+    )
 
     if cloudflare_api_token_secret.get_secret_value() == "":
         raise SetupError("CLOUDFLARE_API_TOKEN is not set")
@@ -214,6 +217,15 @@ def main():
                 "Cloudflare account is not found. A valid account ID can be "
                 "obtained from https://dash.cloudflare.com/profile/accounts."
             )
+
+    if cloudflare_ai_gateway_api_token_secret.get_secret_value() == "":
+        raise SetupError(
+            "CLOUDFLARE_AI_GATEWAY_API_TOKEN is not set. "
+            "An AI Gateway API token can be obtained from "
+            "https://dash.cloudflare.com/profile/api-tokens."
+        )
+    else:
+        log.info("CLOUDFLARE_AI_GATEWAY_API_TOKEN is set")
 
     setup_d1(cf_client, cloudflare_account_id_secret, infra_config)
 
