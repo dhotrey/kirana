@@ -10,6 +10,19 @@ Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools f
 - Models are configured in `app/config.toml` and called through Cloudflare AI Gateway via `app/chat/gateway.py`.
 - The active tools are registered in the graph from `app/tools/finance.py` and `app/tools/vectorize.py`.
 
+### Model routing
+
+Non-Gemini models use the LangGraph graph below: the agent node may emit tool calls, `tools_condition` routes to `ToolNode`, and tool results return to the agent until the model finishes without further tool calls.
+
+Gemini models (`model_routes_via_gemini` in `app/chat/gateway.py` — identifiers containing `gemini` or `google-ai-studio`) take a separate path in `ChatService._gemini_agent_response` (`app/chat/service.py`):
+
+1. Bind tools and run up to three in-agent tool rounds. Each round invokes requested tools directly and appends plain-text `ToolMessage` results.
+2. If tool rounds exhaust without a final answer, run one synthesis call with tools unbound and a short instruction to answer from the collected tool output.
+
+This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph `ToolNode` loop, which can fail when Gemini requires `thought_signature` metadata on follow-up turns.
+
+Executed tool names are recorded in `AIMessage.additional_kwargs["kirana_tool_names"]` so SSE stats and persisted transcripts stay accurate for Gemini turns.
+
 ```mermaid
 flowchart TD
     User["User chat turn<br/>/api/chat/stream or /api/chat/image/stream"] --> Prep["ChatService.chat_stream<br/>validate model, ensure conversation,<br/>emit start event"]
@@ -51,6 +64,16 @@ flowchart TD
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
+
+### Finance SQL constraints
+
+`query_finance_db` validates every statement before execution (`app/tools/finance.py`):
+
+- Only a single read-only `SELECT` is allowed. Comments, multiple statements, and write/DDL keywords are rejected.
+- Tables/views must be drawn from `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`.
+- **Receipt and Splitwise data cannot be joined in one query.** Statements that reference both `receipts` (or `receipt_items`) and any Splitwise view/table in the same SQL are rejected. The agent must query receipt totals and personal-share accounting separately, then reconcile in the answer.
+
+Results are capped at 100 rows per call (`MAX_RESULT_ROWS`).
 
 ### Uploaded-image chat turns
 
