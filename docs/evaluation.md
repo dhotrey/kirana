@@ -38,6 +38,7 @@ Preserve these project-level comparison boundaries:
 Current benchmark support in `app/bench.py`:
 
 - Default runs use the first model alias in `app/config.toml` with tools enabled.
+- With no family flags, `bench.py` runs **QF-1 only**. Pass `--all` or an explicit `--QF1` / `--QF2` / `--QF3` / `--QF4` flag to change scope.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.

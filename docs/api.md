@@ -179,7 +179,9 @@ If `thread_id` is omitted or unknown, the service creates a new conversation and
 
 Finance database tool calls use a shared `D1Database` client created during application startup from `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `KIRANA_DB_ID`. If these are unavailable, the chat stream still starts, but the assistant receives a tool error and should report that structured finance lookup is unavailable. Tool calls and D1 queries are logged with Loguru and, when Logfire is enabled, recorded as spans with query text, row counts, and latency metadata.
 
-LLM calls that fail with a 429 rate-limit response are retried with backoff waits of 15, 30, 45, and 60 seconds before each subsequent attempt (up to four waits; see `RATE_LIMIT_RETRY_DELAYS_SECOND` in `app/chat/service.py`). Each wait emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
+LLM calls that fail with a 429 rate-limit response are retried with backoff waits of 15, 30, 45, and 60 seconds before each subsequent attempt (up to four waits; see `RATE_LIMIT_RETRY_DELAYS_SECONDS` in `app/chat/service.py`). Each wait emits a `rate_limit_retry` stream event and is logged to Logfire with the call name, model, retry attempt, delay, and error text.
+
+`query_finance_db` rejects SQL that joins `receipts` or `receipt_items` with Splitwise tables or views (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`) in one statement. Query receipt totals and Splitwise shares separately, then reconcile in the answer (`app/tools/finance.py`).
 
 ### Request
 
