@@ -45,9 +45,22 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model Routing and Tool Execution
+
+Model aliases in `app/config.toml` route through Cloudflare AI Gateway (`app/chat/gateway.py`). Gemini identifiers (`gemini` or `google-ai-studio` in the configured model string) use a different tool loop than other models:
+
+| Model family | Tool execution | Why |
+|---|---|---|
+| Gemini | In-agent loop in `ChatService._gemini_agent_response` (`app/chat/service.py`): up to three tool-request rounds, tools invoked directly, then a final synthesis call without tools. | Replaying Gemini function-call parts through the OpenAI-compatible LangGraph `ToolNode` can fail when Gemini requires `thought_signature` metadata. |
+| Non-Gemini (e.g. Mistral) | Standard LangGraph graph: `agent` node → `tools_condition` → `ToolNode` → back to `agent`. | Works with the OpenAI-compatible gateway tool protocol. |
+
+Gemini chat turns also pass through `GeminiRateLimiter` (`app/ingestion/rate_limit.py`) using `[ingestion].gemini_min_interval_seconds` before each model call.
+
+When `tools_enabled` is `false` on a chat request, both paths skip tool binding and run a plain model response. Benchmarks use this for the plain-LLM baseline.
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. Receipt tables (`receipts`, `receipt_items`) cannot be combined with Splitwise tables or views in one query; the agent must query each side separately and reconcile.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
