@@ -45,9 +45,22 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Agent execution paths
+
+Most non-Gemini models follow the LangGraph loop in the diagram: the agent node may emit tool calls, `tools_condition` routes to `ToolNode`, and tool JSON results return to the agent until the model answers without tools.
+
+Gemini models use a separate path. `model_routes_via_gemini()` in `app/chat/gateway.py` treats model identifiers containing `gemini` or `google-ai-studio` as Gemini routes. For those models, `ChatService._agent_node` calls `_gemini_agent_response` instead of visiting `ToolNode`:
+
+- Before streaming starts, `GeminiRateLimiter` enforces `[ingestion].gemini_min_interval_seconds` between Gemini API calls on a chat turn.
+- With tools enabled, the service runs up to three in-process tool rounds: bind tools on the model, invoke, execute each call through `_tool_by_name`, and append plain-text `ToolMessage` results.
+- If three rounds still do not produce a final answer, a synthesis call with a fixed instruction asks the model to answer from accumulated tool output without calling more tools.
+- Executed tool names are stored on the assistant message as `kirana_tool_names` because the graph never routes through `ToolNode` for Gemini.
+
+This avoids replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop, which can fail when Gemini requires `thought_signature` metadata. See also the Gemini note under [API chat streaming](./api.md#post-apichatstream).
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. Validation in `app/tools/finance.py` rejects SQL comments, multi-statement scripts, non-`SELECT` statements, and unknown tables. **Receipt totals and Splitwise/accounting tables cannot appear in the same query**; the agent must query them separately and reconcile. Responses cap at 100 rows (`truncated: true` when more rows exist).
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
