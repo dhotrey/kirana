@@ -7,7 +7,9 @@ Kirana is still an early-stage research prototype, so these docs should stay clo
 ## Current Documents
 
 - [Setup](./setup.md): infrastructure setup, required credentials, and the resources created by `app/setup.py`.
+- [Configuration](./configuration.md): `app/config.toml` keys, defaults, and how they connect to chat, ingestion, and benchmarks.
 - [Architecture](./architecture.md): chat graph, registered tools, finance store, vector indexes, and retrieval modalities.
+- [Prompts](./prompts.md): chat, benchmark, and ingestion prompt files under `app/prompts/`.
 - [Data Model](./data-model.md): D1 tables, views, SQL indexes, Vectorize indexes, metadata fields, and local SQLite tables.
 - [Ingestion Pipeline](./ingestion.md): receipt CLI flow, Splitwise import separation, storage responsibilities, observability, and error handling.
 - [API Endpoints](./api.md): FastAPI Swagger/OpenAPI locations and the current chat API request/response contracts.

@@ -45,12 +45,41 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model routing and agent loops
+
+All chat and ingestion model calls use the OpenAI-compatible Cloudflare AI Gateway URL from `app/chat/gateway.py` with `cf-aig-authorization` and, for supported providers, `cf-aig-byok-alias` (`gemini` or `mistral`) so upstream keys stay in the gateway.
+
+Execution differs by provider inside `ChatService._agent_node`:
+
+| Path | When | Tool behavior |
+|---|---|---|
+| **Gemini in-agent loop** | Model identifier contains `gemini` or `google-ai-studio`, and tools are enabled | Up to three in-process tool rounds: bind tools, execute tool calls inside the agent node, append `ToolMessage` results, then either return a final answer or run one synthesis call with tools unbound. Avoids replaying Gemini function-call parts through LangGraph's `ToolNode`, which can fail on `thought_signature` metadata. |
+| **LangGraph tool loop** | Mistral and other non-Gemini aliases, or `tools_enabled: false` | Standard `ToolNode` + `tools_condition` graph: agent may emit tool calls, `ToolNode` runs registered tools, control returns to the agent until no tools are requested. |
+
+Rate-limited LLM responses (HTTP 429) share the same backoff schedule for both paths; see [API](./api.md#post-apichatstream).
+
 ## Implemented Tools
 
 - `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
+
+### Tool guardrails (enforced in code)
+
+`query_finance_db` (`app/tools/finance.py`):
+
+- Only a single `SELECT` statement; semicolons, SQL comments, and write/DDL keywords are rejected.
+- Queries must reference at least one of: `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`.
+- **Receipt and Splitwise data cannot be joined in one query.** If both `receipts` and Splitwise/accounting tables appear, validation fails so the agent fetches grocery evidence and personal-share rows separately and reconciles in natural language.
+- Results are capped at **100 rows**; larger result sets return `truncated: true` in the tool JSON.
+
+Vectorize tools (`app/tools/vectorize.py`):
+
+- `search_receipt_vectors` accepts metadata filters only on indexed fields (`receipt_id`, `store_name`, `date`). ISO `YYYY-MM-DD` date strings are normalized to numeric `YYYYMMDD` for the index.
+- Filter documents must serialize to **under 2048 bytes** and use operators `$eq`, `$ne`, `$in`, `$nin`, `$lt`, `$lte`, `$gt`, `$gte`.
+- Query vectors come from `embedding_key` (in-process cache) or an explicit `vector` list matching `vectorize_index_dimension`.
+- `embed_receipt_query` writes text-query embeddings into the same per-process cache used for uploaded images.
 
 ### Uploaded-image chat turns
 

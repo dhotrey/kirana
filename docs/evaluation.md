@@ -44,6 +44,21 @@ Current benchmark support in `app/bench.py`:
 
 When comparing conditions, keep the knowledge base, benchmark cases, setup state, and evaluation rubric fixed.
 
+## Benchmark CLI (`app/bench.py`)
+
+| Flag | Effect |
+|---|---|
+| *(none)* | Runs **QF-1 only** (easy to mistake for a full suite). |
+| `--all` | Runs QF-1 through QF-4. |
+| `--QF1` … `--QF4` | Run individual families; can be combined. |
+| `--no-tools` | Sets `tools_enabled: false` on every chat request (plain-LLM baseline). |
+| `--system_prompt` | Loads a file from the current directory or `app/prompts/` and sends its contents as each request's system prompt override. |
+| `--out` | Result JSON path (default `app/kirana_agent_tools_and_instruction_following.json`). |
+
+The CLI always uses `cfg.kirana.available_models[0]` as the model alias. Change alias order in `app/config.toml` to benchmark a different gateway model.
+
+QF-3 cases sleep a random **30–60 seconds** between cases to reduce judge and upstream rate-limit collisions (`QF3_MIN_SLEEP_SECONDS` / `QF3_MAX_SLEEP_SECONDS` in `bench.py`).
+
 ## Running Benchmarks
 
 Run the app from one shell:
@@ -68,6 +83,16 @@ Generate benchmark charts from saved result JSON files:
 cd app
 uv run python ../benchmark-results/generate_benchmark_charts.py
 ```
+
+The chart script expects three result files under `benchmark-results/` (paths are fixed in `generate_benchmark_charts.py`):
+
+| Chart label | Input JSON |
+|---|---|
+| Plain LLM (no tools) | `kirana-agent-raw-no-tools.json` |
+| Procedural prompt + tools | `kirana_agent_tools_and_instruction_following.json` |
+| Sparse ICL prompt + tools | `kirana_agent_icl.json` |
+
+It writes PNGs to `benchmark-results/charts/` (success rate by QF, latency, tool calls, token breakdown, tokens per success, accuracy–cost frontier). Regenerate the three JSON files with matching `--out` paths before plotting after a new benchmark run.
 
 The benchmark harness is documented in [app/utils/benchmarks/README.md](../app/utils/benchmarks/README.md).
 
