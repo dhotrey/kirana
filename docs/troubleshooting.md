@@ -12,6 +12,8 @@ Symptoms and fixes for local Kirana development. All behavior below is grounded 
 | Image upload rejected | Empty body, wrong MIME type, or over 10 MB | `ChatService` requires non-empty bytes, optional `image/*` content type check when provided, and `MAX_IMAGE_UPLOAD_BYTES` (`app/chat/service.py`). |
 | Rate-limit SSE events but then failure | Upstream 429 persisted after backoff | Retries use 15s, 30s, 45s, 60s delays (`RATE_LIMIT_RETRY_DELAYS_SECOND`). Reduce concurrency or switch model alias; Gemini routes also wait `gemini_min_interval_seconds` before calls (`app/config.toml`). |
 | Plain-LLM baseline still uses tools in traces | Request flag | Send `tools_enabled: false` on `/api/chat/stream` and `/api/chat/image/stream` ([api](./api.md)). |
+| Benchmark only exercises QF-1 | Missing `--all` | `uv run python bench.py` defaults to QF-1; use `bench.py --all` for the full suite ([evaluation](./evaluation.md#benchmark-cli-appbenchpy)). |
+| Chart script fails to open JSON | Missing ablation outputs | `generate_benchmark_charts.py` requires all three files listed in [evaluation](./evaluation.md#running-benchmarks). |
 
 ## Models and local embeddings
 
