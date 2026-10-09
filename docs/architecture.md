@@ -10,6 +10,17 @@ Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools f
 - Models are configured in `app/config.toml` and called through Cloudflare AI Gateway via `app/chat/gateway.py`.
 - The active tools are registered in the graph from `app/tools/finance.py` and `app/tools/vectorize.py`.
 
+### Model routing (Gemini vs LangGraph tools)
+
+Model identifiers are classified in `app/chat/gateway.py` via `model_routes_via_gemini` (substring match on `gemini` or `google-ai-studio`).
+
+| Path | When | Behavior |
+|---|---|---|
+| LangGraph `ToolNode` | Non-Gemini models with `tools_enabled` | The agent node calls `bind_tools`, `tools_condition` routes tool calls to `ToolNode`, and results return to the agent until the model stops requesting tools. |
+| In-agent Gemini loop | Gemini models with `tools_enabled` | `ChatService._gemini_agent_response` runs inside the agent node: up to three tool-request rounds with inline `ToolMessage` results, then a final synthesis call without tools. The LangGraph `ToolNode` is bypassed for that turn. |
+
+Gemini uses the in-agent loop because replaying Gemini function-call parts through the OpenAI-compatible LangGraph tool loop can fail when the provider requires `thought_signature` metadata on follow-up turns.
+
 ```mermaid
 flowchart TD
     User["User chat turn<br/>/api/chat/stream or /api/chat/image/stream"] --> Prep["ChatService.chat_stream<br/>validate model, ensure conversation,<br/>emit start event"]
@@ -47,7 +58,7 @@ flowchart TD
 
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. A single query cannot reference both receipt tables (`receipts`, `receipt_items`) and Splitwise accounting tables/views (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`); the agent must query each side separately and reconcile in natural language (`app/tools/finance.py`).
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
