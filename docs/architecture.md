@@ -45,9 +45,22 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model routing and tool execution
+
+All chat models are invoked through Cloudflare AI Gateway (`app/chat/gateway.py`) as OpenAI-compatible `ChatOpenAI` clients. `model_routes_via_gemini()` treats identifiers containing `gemini` or `google-ai-studio` as Gemini routes.
+
+| Route | Tool execution | LangGraph `ToolNode` |
+|---|---|---|
+| Non-Gemini (e.g. Mistral) | `bind_tools` on the agent node; LangGraph `tools_condition` loops agent → `ToolNode` → agent until no tool calls remain. | Used for every tool round. |
+| Gemini (when `tools_enabled` is true) | `_gemini_agent_response` in `app/chat/service.py` runs up to three in-agent tool rounds: the model requests tools, the service invokes tools locally, appends `ToolMessage` results, and repeats. If the cap is hit, a final synthesis call answers from accumulated tool text without further tool calls. | Bypassed for Gemini so function-call / `thought_signature` replay issues do not break the graph. |
+
+When `tools_enabled` is false (benchmark plain-LLM baseline), both paths skip tool binding and execution. Tool names executed on the Gemini path are recorded on the final `AIMessage` as `kirana_tool_names` for stats and benchmarks.
+
+429 responses use shared backoff (`RATE_LIMIT_RETRY_DELAYS_SECONDS`). Gemini calls are also spaced by `ingestion.gemini_min_interval_seconds` via `GeminiRateLimiter`.
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. Validation (`app/tools/finance.py`) enforces a single `SELECT`, disallows SQL comments and write keywords, caps results at 100 rows, and **rejects queries that reference both `receipts` (or `receipt_items`) and Splitwise accounting tables/views in one statement**. Household receipt totals and personal-share lookups must use separate tool calls; the agent reconciles in natural language. See `test_validate_finance_sql_rejects_receipt_splitwise_join` in `app/tests/test_chat_tools.py`.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
