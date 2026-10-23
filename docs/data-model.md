@@ -144,6 +144,14 @@ item:<first-32-hex-chars>
 
 Use this index for uploaded item-image questions and fuzzy item matching, then confirm matches against `receipt_items` joined to `receipts`.
 
+## Agent SQL constraints (`query_finance_db`)
+
+The chat finance tool validates every query in `app/tools/finance.py` before execution:
+
+- Only a single read-only `SELECT` is allowed; writes, pragmas, comments, and multi-statement scripts are rejected.
+- Referenced tables must be subset of `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`.
+- Receipt evidence (`receipts` or `receipt_items`) cannot appear in the same statement as Splitwise accounting tables or views. Query grocery totals and personal-share accounting separately, then reconcile in the assistant response.
+
 ## Local SQLite
 
 The local chat database path is configured as `kirana.chat_db_path`, currently `db.sqlite`.

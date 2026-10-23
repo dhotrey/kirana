@@ -45,9 +45,23 @@ flowchart TD
     Final --> Stats["Serialize final SSE end event<br/>response + tokens + latency + tools"]
 ```
 
+## Model routing and tool execution
+
+All chat models are invoked through Cloudflare AI Gateway (`app/chat/gateway.py`) as OpenAI-compatible `ChatOpenAI` clients. Gateway auth uses `CLOUDFLARE_AI_GATEWAY_API_TOKEN`; BYOK routing adds `cf-aig-byok-alias` for `gemini` or `mistral` when the configured model identifier contains those provider names.
+
+`model_routes_via_gemini()` treats identifiers containing `gemini` or `google-ai-studio` as Gemini routes. Those models use a **custom in-agent tool loop** in `ChatService._gemini_agent_response` instead of LangGraph's `ToolNode`:
+
+- Up to three tool rounds: the model may request tools; the service executes them and appends plain-text `ToolMessage` results.
+- A final synthesis call runs **without** bound tools so the model answers from tool output only. This avoids replaying Gemini function-call parts through LangGraph's OpenAI tool loop, which can fail when Gemini requires `thought_signature` metadata.
+- Before each Gemini chat stream, `GeminiRateLimiter` enforces `[ingestion].gemini_min_interval_seconds` between calls.
+
+Non-Gemini models (for example Mistral) use the LangGraph graph above: the agent node binds tools, `tools_condition` routes to `ToolNode`, and tool results return to the agent node until no further tool calls are requested.
+
+When `tools_enabled` is false (benchmark plain-LLM baseline), the agent node skips tool binding and the Gemini-specific loop; only the system prompt and thread messages are sent to the model.
+
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements. A single query cannot reference both receipt tables (`receipts`, `receipt_items`) and Splitwise accounting tables/views (`splits`, `me_expenses`, `roommate1_expenses`, `roommate2_expenses`); the agent must query each side separately and reconcile in natural language.
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
