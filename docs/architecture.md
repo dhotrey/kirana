@@ -56,6 +56,30 @@ flowchart TD
 
 `ChatService` embeds the upload before the graph runs and places the resulting `embedding_key` in the `HumanMessage` text (`app/chat/service.py`). The model never receives raw pixels in chat. For those turns, retrieval is **`search_item_vectors` → `query_finance_db`**, not `embed_receipt_query` + `search_receipt_vectors` (receipt-summary search is for semantic trip themes from text, using keys produced by `embed_receipt_query`).
 
+### Finance SQL guardrails
+
+`query_finance_db` validates every statement in `app/tools/finance.py` before D1 executes it:
+
+- Single read-only `SELECT` only; semicolon-terminated multi-statements and SQL comments are rejected.
+- Tables/views must be drawn from `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`.
+- **Receipt totals and Splitwise accounting cannot appear in one query.** The validator rejects `FROM`/`JOIN` combinations that reference both `receipts` and any Splitwise view/table in the same statement; the agent must query each side separately and reconcile in natural language.
+- Result sets are capped at 100 rows (`MAX_RESULT_ROWS`).
+
+Unit tests in `app/tests/test_chat_tools.py` encode the allowed and forbidden patterns.
+
+## Model routing and tool execution
+
+Model identifiers come from `app/config.toml`. Gateway routing and BYOK aliases are built in `app/chat/gateway.py`.
+
+| Route | Detection | Tool execution |
+|---|---|---|
+| Gemini | Identifier contains `gemini` or `google-ai-studio` (`model_routes_via_gemini`). | `_gemini_agent_response` in `app/chat/service.py` runs up to **three** in-agent tool rounds: bind tools, execute returned calls directly via `_tool_by_name`, append `ToolMessage` results, then either return the model answer or force a final synthesis turn without further tool calls. LangGraph **`ToolNode` is not used** for Gemini, avoiding OpenAI-compatible replay issues with Gemini `thought_signature` metadata. |
+| Other configured models (e.g. Mistral) | Default path when not Gemini. | Standard LangGraph loop: agent node with `bind_tools`, `tools_condition` → `ToolNode` → agent until no tool calls remain. |
+
+When `tools_enabled` is `false` on the chat API (benchmark plain-LLM baseline), both paths skip tool binding and run a single model completion.
+
+Rate-limit handling is shared: LLM 429 responses retry with delays from `RATE_LIMIT_RETRY_DELAYS_SECONDS` `(15, 30, 45, 60)` and emit SSE `rate_limit_retry` events. Gemini chat calls also honor `[kirana].gemini_min_interval_seconds` through `GeminiRateLimiter` during ingestion and agent invocations where configured.
+
 ## Finance Store
 
 Cloudflare D1 stores the structured finance data:
