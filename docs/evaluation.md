@@ -38,9 +38,28 @@ Preserve these project-level comparison boundaries:
 Current benchmark support in `app/bench.py`:
 
 - Default runs use the first model alias in `app/config.toml` with tools enabled.
+- If you pass **no** `--QF1`, `--QF2`, `--QF3`, `--QF4`, or `--all`, only **QF-1** runs (household aggregation cases).
+- `--all` runs every defined family (QF-1 through QF-4).
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.
+
+### `bench.py` CLI reference
+
+Run from `app/` with `uv run python main.py` already serving on `http://127.0.0.1:8000`.
+
+| Flag | Effect |
+|---|---|
+| `--QF1` | Run QF-1 numeric aggregation cases only (can combine with other `--QF*` flags). |
+| `--QF2` | Run uploaded-image recall cases against `utils/benchmarks/test-images/`. |
+| `--QF3` | Run judged semantic trip/date cases (includes randomized inter-case sleep to reduce rate limits). |
+| `--QF4` | Run multi-turn conversational drill-down in one thread per case. |
+| `--all` | Run QF-1, QF-2, QF-3, and QF-4. |
+| `--no-tools` | Sets `tools_enabled=false` on every benchmark chat request. |
+| `--system_prompt PATH` | Per-request system prompt file; relative paths resolve from CWD then `app/prompts/`. |
+| `--out PATH` | JSON output path (default: `app/kirana_agent_tools_and_instruction_following.json`). |
+
+There is no `--model` flag: the harness always uses `cfg.kirana.available_models[0]`. Change model tier by reordering or editing aliases in `app/config.toml`, then re-run comparable `--out` files for each ablation.
 
 When comparing conditions, keep the knowledge base, benchmark cases, setup state, and evaluation rubric fixed.
 

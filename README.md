@@ -76,6 +76,7 @@ More setup, ingestion, API, and evaluation details live in [docs/](docs/README.m
 | [API Endpoints](docs/api.md) | FastAPI routes, request/response shapes, SSE events, and Swagger/OpenAPI locations. |
 | [Evaluation](docs/evaluation.md) | Query families, ablation boundaries, benchmark commands, and metrics. |
 | [Troubleshooting](docs/troubleshooting.md) | Chat tool errors, embedding cache, gateway setup, and ingestion pitfalls. |
+| [Testing](docs/testing.md) | Pytest commands, module map, and what unit tests do not cover. |
 | [Docs Index](docs/README.md) | Complete documentation index and common entry points. |
 
 ## Project Scope
