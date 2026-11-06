@@ -37,7 +37,7 @@ Preserve these project-level comparison boundaries:
 
 Current benchmark support in `app/bench.py`:
 
-- Default runs use the first model alias in `app/config.toml` with tools enabled.
+- Default runs use the **first** model alias in `[kirana].available_models` in `app/config.toml` (see `model = cfg.kirana.available_models[0]` in `main()`), with tools enabled unless `--no-tools` is passed.
 - `--no-tools` disables SQL and Vectorize tools for the plain-LLM baseline.
 - `--system_prompt` sends a per-request prompt override, for example `system_icl.md`, without modifying prompt files.
 - `--out` writes each condition to a distinct result JSON.
