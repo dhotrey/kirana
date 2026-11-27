@@ -10,6 +10,17 @@ Kirana is a FastAPI chat UI backed by a LangGraph agent. The agent calls tools f
 - Models are configured in `app/config.toml` and called through Cloudflare AI Gateway via `app/chat/gateway.py`.
 - The active tools are registered in the graph from `app/tools/finance.py` and `app/tools/vectorize.py`.
 
+### Agent execution paths
+
+Model routing is determined in `app/chat/gateway.py` via `model_routes_via_gemini()`: identifiers containing `gemini` or `google-ai-studio` use the Gemini path; other configured aliases (for example Mistral) use the LangGraph loop below.
+
+| Path | When | Tool loop | Notes |
+|---|---|---|---|
+| Gemini in-agent | Gemini alias, `tools_enabled=true`, tools registered | Up to three tool rounds inside `_gemini_agent_response`, then a final synthesis call without tools | Avoids replaying Gemini function-call parts through LangGraph's `ToolNode`, which can fail when the provider expects `thought_signature` metadata. Tool results are plain-text `ToolMessage` content. |
+| LangGraph default | Non-Gemini models, or `tools_enabled=false` | `agent` → `tools_condition` → `ToolNode` → `agent` until no tool calls | Standard OpenAI-compatible tool binding via `model.bind_tools()`. |
+
+When `tools_enabled` is false, both paths skip tool binding; benchmarks use this for the plain-LLM baseline.
+
 ```mermaid
 flowchart TD
     User["User chat turn<br/>/api/chat/stream or /api/chat/image/stream"] --> Prep["ChatService.chat_stream<br/>validate model, ensure conversation,<br/>emit start event"]
@@ -47,7 +58,7 @@ flowchart TD
 
 ## Implemented Tools
 
-- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database. It only allows known finance tables/views and blocks write or schema-changing statements.
+- `query_finance_db`: runs validated read-only SQLite `SELECT` queries against the Cloudflare D1 finance database (`app/tools/finance.py`). Validation enforces a single `SELECT`, no SQL comments, allowlisted tables/views only, and blocks write or schema-changing keywords. Results are capped at 100 rows (`MAX_RESULT_ROWS`). **Receipt and Splitwise data must not appear in one query**: if `receipts` or `receipt_items` is referenced together with `splits` or the `*_expenses` views, validation fails; run separate queries and reconcile in the model response (see `test_validate_finance_sql_rejects_receipt_splitwise_join` in `app/tests/test_chat_tools.py`).
 - `embed_receipt_query`: embeds a natural-language retrieval query with `Qwen/Qwen3-VL-Embedding-2B` and stores the vector in an in-memory per-process cache.
 - `search_receipt_vectors`: searches the receipt-summary Vectorize index with optional metadata filters for `receipt_id`, `store_name`, and `date`.
 - `search_item_vectors`: searches the item-name Vectorize index. This is the main retrieval path for uploaded image questions and fuzzy item matching.
