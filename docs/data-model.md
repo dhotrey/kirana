@@ -6,6 +6,17 @@ This document describes the app-owned storage schema for Kirana. The source of t
 
 The finance database name is configured as `cloudflare.d1_database_name`, currently `kirana`.
 
+### Query-time SQL guardrails
+
+The chat tool `query_finance_db` does not execute arbitrary SQL. `validate_finance_sql()` in `app/tools/finance.py` applies these rules before D1 runs a statement:
+
+- Only one read-only `SELECT` (no trailing multi-statement batches).
+- No block comments, line comments, or `;`-separated statements.
+- `FROM` / `JOIN` targets must be among `receipts`, `receipt_items`, `splits`, `me_expenses`, `roommate1_expenses`, and `roommate2_expenses`.
+- **Do not combine receipt tables with Splitwise/accounting tables in a single query.** For example, joining `receipts` to `me_expenses` is rejected; query each side separately when QF4-style answers need both grocery totals and personal share.
+
+Amount columns are integer cents; the tool description tells the model to expose dollars with expressions such as `ROUND(cents_column / 100.0, 2)`.
+
 ### `splits`
 
 Imported from the configured Splitwise CSV by `app/ingest_kb.py`.
